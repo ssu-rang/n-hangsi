@@ -1,0 +1,12 @@
+:root { --bs-primary: #6d3ce7; --bs-primary-rgb: 109, 60, 231; --app-bg: #f7f5f0; }
+body { background: var(--app-bg); color: #211e27; font-family: Pretendard, system-ui, -apple-system, "Segoe UI", sans-serif; }
+.fw-black { font-weight: 900; }.brand-mark { display:inline-grid; place-items:center; width:2rem; height:2rem; border-radius:.6rem; background:var(--bs-primary); color:#fff; }
+.hero { background: linear-gradient(135deg, #6d3ce7, #8b5cf6); color:#fff; border-radius:1.5rem; }
+.poem-card { transition: transform .2s, border-color .2s; }.poem-card:hover { transform:translateY(-2px); border-color:#c9b8f5; }
+.poem-line { display:grid; grid-template-columns:2.25rem 1fr; gap:.5rem; font-size:1.1rem; line-height:1.7; }.poem-line strong { color:var(--bs-primary); font-size:1.25rem; }
+.avatar { display:inline-grid; place-items:center; width:2rem; height:2rem; border-radius:50%; background:#eee7ff; color:var(--bs-primary); font-weight:800; }
+.page-label { color:var(--bs-primary); font-size:.75rem; font-weight:900; letter-spacing:.12em; }.section-title { font-weight:900; letter-spacing:-.03em; }
+.rating { color:#f29d22; }.form-control:focus,.form-select:focus { border-color:#9e7cf0; box-shadow:0 0 0 .25rem rgb(109 60 231 / 15%); }
+.btn-primary { --bs-btn-bg:#6d3ce7; --bs-btn-border-color:#6d3ce7; --bs-btn-hover-bg:#5830c3; --bs-btn-hover-border-color:#5830c3; }
+.empty-state { max-width:36rem; margin:5rem auto; text-align:center; }.preview-letter { color:var(--bs-primary); font-size:1.4rem; font-weight:900; }
+@media (max-width: 767.98px) { .hero { border-radius:1rem; }.display-4 { font-size:2.4rem; }.poem-line { font-size:1rem; } }

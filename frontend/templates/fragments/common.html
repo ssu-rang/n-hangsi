@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head th:fragment="head(title)">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title th:text="${title} + ' | N행시'">N행시</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" th:href="@{/css/app.css}" href="../../static/css/app.css">
+</head>
+<body>
+<header th:fragment="header" class="sticky-top border-bottom bg-body-tertiary">
+  <nav class="navbar navbar-expand-lg container py-2">
+    <a class="navbar-brand fw-black d-flex align-items-center gap-2" th:href="@{/}" href="../home.html"><span class="brand-mark">N</span>N행시</a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNav" aria-controls="mainNav" aria-expanded="false" aria-label="메뉴 열기"><span class="navbar-toggler-icon"></span></button>
+    <div id="mainNav" class="collapse navbar-collapse">
+      <ul class="navbar-nav mx-auto gap-lg-3">
+        <li class="nav-item"><a class="nav-link" th:href="@{/}" href="../home.html">홈</a></li>
+        <li class="nav-item"><a class="nav-link" th:href="@{/poems}" href="../poems/list.html">둘러보기</a></li>
+        <li class="nav-item"><a class="nav-link" th:href="@{/poems/new}" href="../poems/write.html">글쓰기</a></li>
+      </ul>
+      <a class="btn btn-outline-primary" th:href="@{/login}" href="../auth/login.html">로그인</a>
+    </div>
+  </nav>
+</header>
+<footer th:fragment="footer" class="border-top py-4 mt-5"><div class="container text-secondary small">© 2026 N행시 · Bootstrap과 Thymeleaf로 만든 서비스</div></footer>
+<div th:fragment="scripts">
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
+  <script th:src="@{/js/app.js}" src="../../static/js/app.js"></script>
+</div>
+</body>
+</html>
