@@ -1,1 +1,44 @@
-<!doctype html><html lang="ko" xmlns:th="http://www.thymeleaf.org"><head th:replace="~{fragments/common :: head(${poem.word})}"><title>N행시 상세</title></head><body><header th:replace="~{fragments/common :: header}"></header><main class="container py-5" style="max-width: 800px"><article class="card shadow-sm"><div class="card-body p-4 p-lg-5"><div class="page-label">N행시</div><h1 class="display-6 fw-black" th:text="${poem.word}">대학교</h1><div class="d-flex align-items-center gap-2 mb-4"><span class="avatar" th:text="${#strings.substring(poem.authorName,0,1)}">복</span><div><strong th:text="${poem.authorName}">복학생A</strong><div class="small text-secondary" th:text="${poem.createdAt}">14분 전</div></div></div><div class="my-4"><div class="poem-line mb-2" th:each="line, stat : ${poem.lines}"><strong th:text="${#strings.substring(poem.word, stat.index, stat.index + 1)}">대</strong><span th:text="${line}">대충 살자고 했는데</span></div></div><div class="border-top pt-3 d-flex gap-3 text-secondary"><strong class="rating" th:text="|★ ${poem.rating}|">★ 4.8</strong><span th:text="|평가 ${poem.ratingCount}|">평가 231</span><span th:text="|댓글 ${poem.commentCount}|">댓글 18</span></div></div></article><section class="card shadow-sm mt-3"><div class="card-body p-4"><h2 class="h5 fw-bold">댓글</h2><form method="post" th:action="@{/poems/{id}/comments(id=${poem.id})}" class="d-flex gap-2 mb-4"><label class="visually-hidden" for="comment">댓글</label><textarea id="comment" name="content" class="form-control" required placeholder="댓글을 입력하세요"></textarea><button class="btn btn-primary">등록</button></form><div class="border-top py-3" th:each="comment : ${comments}"><strong th:text="${comment.authorName}">감자전문가</strong><p class="mb-0 mt-1" th:text="${comment.content}">마지막 줄이 재미있어요.</p></div></div></section></main><footer th:replace="~{fragments/common :: footer}"></footer><div th:replace="~{fragments/common :: scripts}"></div></body></html>
+<!doctype html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/common :: head(${poem.word})}"><title>N행시 상세</title></head>
+<body>
+<header th:replace="~{fragments/common :: header}"></header>
+<main class="container py-5" style="max-width: 800px">
+    <article class="card shadow-sm">
+        <div class="card-body p-4 p-lg-5">
+            <h1 class="display-6 fw-black" th:text="${poem.word}">대학교</h1>
+            <div class="d-flex align-items-center gap-2 mb-4"><span class="avatar"
+                                                                    th:text="${#strings.substring(poem.authorName,0,1)}">복</span>
+                <div><strong th:text="${poem.authorName}">복학생A</strong>
+                    <div class="small text-secondary" th:text="${poem.createdAt}">14분 전</div>
+                </div>
+            </div>
+            <div class="my-4">
+                <div class="poem-line mb-2" th:each="line, stat : ${poem.lines}"><strong
+                        th:text="${#strings.substring(poem.word, stat.index, stat.index + 1)}">대</strong><span
+                        th:text="${line}">대충 살자고 했는데</span></div>
+            </div>
+            <div class="border-top pt-3 d-flex gap-3 text-secondary"><strong class="rating"
+                                                                             th:text="|★ ${poem.rating}|">★ 4.8</strong><span
+                    th:text="|평가 ${poem.ratingCount}|">평가 231</span><span
+                    th:text="|댓글 ${poem.commentCount}|">댓글 18</span></div>
+        </div>
+    </article>
+    <section class="card shadow-sm mt-3">
+        <div class="card-body p-4"><h2 class="h5 fw-bold">댓글</h2>
+            <form method="post" th:action="@{/poems/{id}/comments(id=${poem.id})}" class="d-flex gap-2 mb-4"><label
+                    class="visually-hidden" for="comment">댓글</label><textarea id="comment" name="content"
+                                                                              class="form-control" required
+                                                                              placeholder="댓글을 입력하세요"></textarea>
+                <button class="btn btn-primary">등록</button>
+            </form>
+            <div class="border-top py-3" th:each="comment : ${comments}"><strong
+                    th:text="${comment.authorName}">감자전문가</strong>
+                <p class="mb-0 mt-1" th:text="${comment.content}">마지막 줄이 재미있어요.</p></div>
+        </div>
+    </section>
+</main>
+<footer th:replace="~{fragments/common :: footer}"></footer>
+<div th:replace="~{fragments/common :: scripts}"></div>
+</body>
+</html>
