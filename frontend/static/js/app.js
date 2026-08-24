@@ -57,8 +57,11 @@ function lines(p) {
     return p.lines.map((x, i) => `<div class="poem-line"><b>${esc([...p.word][i])}</b><span>${esc(x)}</span></div>`).join("")
 }
 
-function card(p) {
-    return `<article class="card"><div class="eyebrow">N행시</div><h2>${esc(p.word)}</h2>${lines(p)}<div class="meta"><span>@${esc(p.authorName)}</span><span>★ ${p.rating.toFixed(1)} · 댓글 ${p.comments.length}</span></div><a class="cover" href="#/poems/${p.id}" aria-label="${esc(p.word)} 작품 보기"></a></article>`
+function card(p, rank) {
+    let hot = rank === 1 ? `<span class="hot-label">HOT</span>` : "",
+        heading = rank ? `<div class="community-heading"><span class="community-rank">#${rank}</span><h2>${esc(p.word)}</h2>${hot}<span class="line-count">${[...p.word].length}행시</span></div>` : `<h2>${esc(p.word)}</h2>`,
+        created = p.createdAt ? ` · ${esc(p.createdAt)}` : "";
+    return `<article class="card">${heading}${lines(p)}<div class="meta"><span>@${esc(p.authorName)} · 평점 ${p.rating.toFixed(1)} · 댓글 ${p.comments.length}${created}</span></div><a class="cover" href="#/poems/${p.id}" aria-label="${esc(p.word)} 작품 보기"></a></article>`
 }
 
 function show(s) {
@@ -68,7 +71,7 @@ function show(s) {
 }
 
 function nav() {
-    document.querySelector("#auth").innerHTML = user() ? `<a href="#/profile">${esc(user().nickname)}</a><button class="link" id="logout">로그아웃</button>` : '<a class="button" href="#/login">로그인</a>';
+    document.querySelector("#auth").innerHTML = user() ? `<a href="#/profile">${esc(user().nickname)}</a><button class="link" id="logout">로그아웃</button>` : '<a class="nav-login" href="#/login">로그인</a>';
     document.querySelector("#logout")?.addEventListener("click", () => {
         state.session = null;
         save();
@@ -78,13 +81,23 @@ function nav() {
 }
 
 const view = {
-    home() {
-        show(`<section class="hero"><div><div class="eyebrow light">오늘의 제시어 · 8월 16일</div><h1>파란하늘</h1><p>한 글자에서 시작해, 함께 오래 기억할 문장을 만듭니다.</p><div class="actions"><a class="button inverse" href="#/write?word=파란하늘">N행시 쓰기</a><a class="button ghost" href="#/poems">작품 둘러보기</a></div></div><div class="note"><small>오늘의 문장</small><div class="poem-line"><b>파</b><span>파란 물감 풀어 놓은 듯</span></div><div class="poem-line"><b>란</b><span>란초꽃 향기 번지는 오후</span></div><div class="poem-line"><b>하</b><span>하늘을 가만히 올려다보니</span></div><div class="poem-line"><b>늘</b><span>늘 좋은 일이 생길 것 같아</span></div></div></section><div class="section-head"><h1>지금 인기 있는 N행시</h1><a href="#/poems">전체 보기 →</a></div><div class="grid">${state.poems.slice(-2).reverse().map(card).join("")}</div>`)
+    home(q) {
+        let recommended = state.poems[0], lineFilter = q?.get("lines") || "all",
+            matchesLines = p => {
+                let count = [...p.word].length;
+                if (lineFilter === "all") return true;
+                if (lineFilter === "5plus") return count >= 5;
+                return count === +lineFilter
+            },
+            popular = state.poems.slice(-2).reverse().filter(matchesLines),
+            lineItems = [["all", "전체"], ["2", "2행시"], ["3", "3행시"], ["4", "4행시"], ["5plus", "5행시 이상"]]
+                .map(([value, label]) => `<a class="${lineFilter === value ? "is-active" : ""}" href="${value === "all" ? "#/" : `#/?lines=${value}`}"${lineFilter === value ? ' aria-current="page"' : ""}>${label}</a>`).join("");
+        show(`<div class="home-layout"><aside class="category-sidebar" aria-label="N행시 카테고리"><h2>카테고리</h2><div class="filter-group"><h3>행 수</h3><nav>${lineItems}</nav></div><div class="filter-group difficulty-filter"><h3>난이도</h3><nav aria-label="난이도 필터 준비 중"><span aria-disabled="true">전체</span><span aria-disabled="true">쉬움</span><span aria-disabled="true">보통</span><span aria-disabled="true">어려움</span></nav></div></aside><div class="main-content"><section class="daily-overview"><div class="daily-prompt"><div class="daily-prompt-label">오늘의 제시어</div><h1>파란하늘</h1><p>오늘의 단어로 N행시를 지어보세요.</p><a class="button inverse" href="#/write?word=파란하늘">N행시 쓰기</a></div><div class="daily-recommendation"><div class="daily-recommendation-label">오늘의 추천 작품</div>${recommended ? `${lines(recommended)}<div class="meta recommendation-meta"><span>@${esc(recommended.authorName)} · 평점 ${recommended.rating.toFixed(1)} · 댓글 ${recommended.comments.length}${recommended.createdAt ? ` · ${esc(recommended.createdAt)}` : ""}</span></div>` : '<p class="muted">아직 추천할 작품이 없습니다.</p>'}</div></section><div class="section-head home-section-head"><h1>지금 인기 있는 N행시</h1><a href="#/poems">전체 보기 →</a></div><div class="trending-list">${popular.length ? popular.map((p, i) => card(p, i + 1)).join("") : '<p class="empty">조건에 맞는 작품이 없습니다.</p>'}</div></div></div>`)
     },
     poems(q) {
         let k = (q.get("q") || "").toLowerCase(),
             items = state.poems.filter(p => (p.word + p.lines.join("") + p.authorName).toLowerCase().includes(k));
-        show(`<section class="page-head"><div class="eyebrow">EXPLORE</div><h1>마음에 드는 문장 찾기</h1><p>단어, 문장, 작가 이름으로 검색해 보세요.</p></section><form id="search" class="search"><input name="q" aria-label="검색어" value="${esc(q.get("q") || "")}" placeholder="단어 또는 내용 검색"><button class="button">검색</button></form>${items.length ? `<div class="grid">${items.map(card).join("")}</div>` : '<div class="empty"><h2>검색 결과가 없습니다</h2><a class="button" href="#/write">첫 작품 쓰기</a></div>'}`);
+        show(`<section class="page-head"><div class="eyebrow">EXPLORE</div><h1>마음에 드는 문장 찾기</h1><p>단어, 문장, 작가 이름으로 검색해 보세요.</p></section><form id="search" class="search explore-search"><input name="q" aria-label="검색어" value="${esc(q.get("q") || "")}" placeholder="단어 또는 내용 검색"><button class="button">검색</button></form>${items.length ? `<div class="grid explore-grid">${items.map(card).join("")}</div>` : '<div class="empty"><h2>검색 결과가 없습니다</h2><a class="button" href="#/write">첫 작품 쓰기</a></div>'}`);
         document.querySelector("#search").onsubmit = e => {
             e.preventDefault();
             location.hash = "#/poems?q=" + encodeURIComponent(new FormData(e.target).get("q"))
@@ -93,7 +106,7 @@ const view = {
     detail(id) {
         let p = state.poems.find(x => x.id === +id);
         if (!p) return view.notFound();
-        show(`<article class="card detail"><div class="eyebrow">N행시</div><h1>${esc(p.word)}</h1><a class="author" href="#/users/${p.authorId}"><span class="avatar">${esc(p.authorName[0])}</span><span><b>${esc(p.authorName)}</b><small>${p.createdAt}</small></span></a><div class="detail-lines">${lines(p)}</div><div class="meta">★ ${p.rating.toFixed(1)} · 평가 ${p.ratingCount} · 댓글 ${p.comments.length}</div></article><section class="card comments"><h2>댓글 ${p.comments.length}</h2><form id="comment" class="comment-form"><textarea name="content" required maxlength="300" aria-label="댓글" placeholder="따뜻한 의견을 남겨주세요"></textarea><button class="button">등록</button></form>${p.comments.length ? p.comments.map(c => `<div class="comment"><b>${esc(c.authorName)}</b><p>${esc(c.content)}</p></div>`).join("") : '<p class="muted">첫 댓글을 남겨보세요.</p>'}</section>`);
+        show(`<article class="card detail"><h1>${esc(p.word)}</h1><a class="author" href="#/users/${p.authorId}"><span class="avatar">${esc(p.authorName[0])}</span><span><b>${esc(p.authorName)}</b><small>${p.createdAt}</small></span></a><div class="detail-lines">${lines(p)}</div><div class="meta">★ ${p.rating.toFixed(1)} · 평가 ${p.ratingCount} · 댓글 ${p.comments.length}</div></article><section class="card comments"><h2>댓글 ${p.comments.length}</h2><form id="comment" class="comment-form"><textarea name="content" required maxlength="300" aria-label="댓글" placeholder="따뜻한 의견을 남겨주세요"></textarea><button class="button">등록</button></form>${p.comments.length ? p.comments.map(c => `<div class="comment"><b>${esc(c.authorName)}</b><p>${esc(c.content)}</p></div>`).join("") : '<p class="muted">첫 댓글을 남겨보세요.</p>'}</section>`);
         document.querySelector("#comment").onsubmit = e => {
             e.preventDefault();
             if (!user()) return login();
@@ -105,7 +118,7 @@ const view = {
     },
     write(q) {
         if (!user()) return login();
-        show(`<section class="page-head"><div class="eyebrow">CREATE</div><h1>한 글자씩 이어볼까요?</h1><p>2~6글자 제시어를 입력하세요.</p></section><form class="card form-card" id="write"><label>제시어<input id="word" name="word" minlength="2" maxlength="6" required value="${esc(q.get("word") || "")}"></label><p id="hint" class="muted"></p><div id="fields"></div><div class="actions right"><a class="button secondary" href="#/">취소</a><button class="button">등록</button></div></form>`);
+        show(`<section class="page-head"><div class="eyebrow">CREATE</div><h1>한 글자씩 이어볼까요?</h1><p>2~6글자 제시어를 입력하세요.</p></section><form class="card form-card write-card" id="write"><label>제시어<input id="word" name="word" minlength="2" maxlength="6" required value="${esc(q.get("word") || "")}"></label><p id="hint" class="muted"></p><div id="fields"></div><div class="actions right"><a class="button secondary" href="#/">취소</a><button class="button">등록</button></div></form>`);
         let w = document.querySelector("#word"), f = document.querySelector("#fields"), draw = () => {
             w.value = [...w.value.replace(/\s/g, "")].slice(0, 6).join("");
             document.querySelector("#hint").textContent = w.value ? `${[...w.value].length}행시를 작성합니다.` : "제시어를 입력하세요.";
@@ -178,7 +191,8 @@ function render() {
     nav();
     let raw = location.hash.slice(1) || "/", [path, query = ""] = raw.split("?"), q = new URLSearchParams(query),
         p = path.split("/").filter(Boolean);
-    if (path === "/") view.home(); else if (path === "/poems") view.poems(q); else if (p[0] === "poems" && p[1]) view.detail(p[1]); else if (path === "/write") view.write(q); else if (path === "/login") view.login(); else if (path === "/signup") view.signup(); else if (path === "/profile") view.profile(); else if (p[0] === "users") view.profile(p[1]); else view.notFound();
+    document.body.classList.toggle("home-page", path === "/");
+    if (path === "/") view.home(q); else if (path === "/poems") view.poems(q); else if (p[0] === "poems" && p[1]) view.detail(p[1]); else if (path === "/write") view.write(q); else if (path === "/login") view.login(); else if (path === "/signup") view.signup(); else if (path === "/profile") view.profile(); else if (p[0] === "users") view.profile(p[1]); else view.notFound();
     document.querySelector("#nav").classList.remove("open")
 }
 
