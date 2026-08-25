@@ -59,9 +59,10 @@ function lines(p) {
 
 function card(p, rank) {
     let hot = rank === 1 ? `<span class="hot-label">HOT</span>` : "",
-        heading = rank ? `<div class="community-heading"><span class="community-rank">#${rank}</span><h2>${esc(p.word)}</h2>${hot}<span class="line-count">${[...p.word].length}행시</span></div>` : `<h2>${esc(p.word)}</h2>`,
-        created = p.createdAt ? ` · ${esc(p.createdAt)}` : "";
-    return `<article class="card">${heading}${lines(p)}<div class="meta"><span>@${esc(p.authorName)} · 평점 ${p.rating.toFixed(1)} · 댓글 ${p.comments.length}${created}</span></div><a class="cover" href="#/poems/${p.id}" aria-label="${esc(p.word)} 작품 보기"></a></article>`
+        heading = rank ? `<span class="community-rank">#${String(rank).padStart(2, "0")}</span><div class="community-content"><div class="community-heading"><h2>${esc(p.word)}</h2>${hot}<span class="line-count">${[...p.word].length}행시</span></div>` : `<h2>${esc(p.word)}</h2>`,
+        created = p.createdAt ? ` · ${esc(p.createdAt)}` : "",
+        content = `${heading}${lines(p)}<div class="meta"><span>@${esc(p.authorName)} · 평점 ${p.rating.toFixed(1)} · 댓글 ${p.comments.length}${created}</span></div>${rank ? "</div>" : ""}`;
+    return `<article class="card">${rank ? `<div class="card-body">${content}</div>` : content}<a class="cover" href="#/poems/${p.id}" aria-label="${esc(p.word)} 작품 보기"></a></article>`
 }
 
 function show(s) {
@@ -82,7 +83,16 @@ function nav() {
 
 const view = {
     home(q) {
-        let recommended = state.poems[0], lineFilter = q?.get("lines") || "all",
+        let promptWord = "파란하늘",
+            promptExample = {
+                word: promptWord,
+                lines: ["파도처럼 설레는 마음으로", "란초꽃보다 환하게 웃고", "하루의 걱정은 잠시 내려놓고", "늘 새로운 문장을 써 내려간다"],
+                authorName: "문장수집가",
+                rating: 4.8
+            },
+            promptPoems = state.poems.filter(p => p.word === promptWord),
+            visiblePromptPoems = promptPoems.length ? promptPoems : [promptExample],
+            recommended = visiblePromptPoems[0], lineFilter = q?.get("lines") || "all",
             matchesLines = p => {
                 let count = [...p.word].length;
                 if (lineFilter === "all") return true;
@@ -91,8 +101,9 @@ const view = {
             },
             popular = state.poems.slice(-2).reverse().filter(matchesLines),
             lineItems = [["all", "전체"], ["2", "2행시"], ["3", "3행시"], ["4", "4행시"], ["5plus", "5행시 이상"]]
-                .map(([value, label]) => `<a class="${lineFilter === value ? "is-active" : ""}" href="${value === "all" ? "#/" : `#/?lines=${value}`}"${lineFilter === value ? ' aria-current="page"' : ""}>${label}</a>`).join("");
-        show(`<div class="home-layout"><aside class="category-sidebar" aria-label="N행시 카테고리"><h2>카테고리</h2><div class="filter-group"><h3>행 수</h3><nav>${lineItems}</nav></div><div class="filter-group difficulty-filter"><h3>난이도</h3><nav aria-label="난이도 필터 준비 중"><span aria-disabled="true">전체</span><span aria-disabled="true">쉬움</span><span aria-disabled="true">보통</span><span aria-disabled="true">어려움</span></nav></div><div class="sidebar-ad" aria-label="가상 광고"><span>ADVERTISEMENT</span><strong>오늘 쓴 한 줄이<br>내일의 굿즈로</strong><small>가상 광고 영역</small></div><div class="sidebar-ad" aria-label="가상 광고"><span>ADVERTISEMENT</span><strong>오늘 쓴 한 줄이<br>내일의 굿즈로</strong><small>가상 광고 영역</small></div></aside><div class="main-content"><section class="daily-overview"><div class="daily-prompt"><div class="daily-prompt-label">오늘의 제시어</div><h1>파란하늘</h1><p>오늘의 단어로 N행시를 지어보세요.</p><a class="button inverse" href="#/write?word=파란하늘">N행시 쓰기</a></div><div class="daily-recommendation"><div class="daily-recommendation-label">오늘의 추천 작품</div>${recommended ? `${lines(recommended)}<div class="meta recommendation-meta"><span>@${esc(recommended.authorName)} · 평점 ${recommended.rating.toFixed(1)} · 댓글 ${recommended.comments.length}${recommended.createdAt ? ` · ${esc(recommended.createdAt)}` : ""}</span></div>` : '<p class="muted">아직 추천할 작품이 없습니다.</p>'}</div></section><div class="section-head home-section-head"><h1>지금 인기 있는 N행시</h1><a href="#/poems">전체 보기 →</a></div><div class="trending-list">${popular.length ? popular.map((p, i) => card(p, i + 1)).join("") : '<p class="empty">조건에 맞는 작품이 없습니다.</p>'}</div></div></div>`)
+                .map(([value, label]) => `<a class="${lineFilter === value ? "is-active" : ""}" href="${value === "all" ? "#/" : `#/?lines=${value}`}"${lineFilter === value ? ' aria-current="page"' : ""}>${label}</a>`).join(""),
+            trendingFeed = popular.map((p, i) => `<div class="trending-item">${card(p, i + 1)}</div>`).join("");
+        show(`<div class="home-layout"><aside class="category-sidebar" aria-label="N행시 카테고리"><h2>카테고리</h2><div class="filter-group"><h3>행 수</h3><nav>${lineItems}</nav></div><div class="filter-group difficulty-filter"><h3>난이도</h3><nav aria-label="난이도 필터 준비 중"><span class="is-active" aria-disabled="true">전체</span><span aria-disabled="true">쉬움</span><span aria-disabled="true">보통</span><span aria-disabled="true">어려움</span></nav></div><div class="sidebar-ad" aria-label="가상 광고"><span>ADVERTISEMENT</span><strong>오늘 쓴 한 줄이<br>내일의 굿즈로</strong><small>가상 광고 영역</small></div><div class="sidebar-ad" aria-label="가상 광고"><span>ADVERTISEMENT</span><strong>오늘 쓴 한 줄이<br>내일의 굿즈로</strong><small>가상 광고 영역</small></div></aside><div class="main-content"><section class="daily-overview"><div class="daily-prompt"><div class="daily-prompt-label">오늘의 제시어</div><h1>파란하늘</h1><p>오늘의 단어로 N행시를 지어보세요.</p><a class="button inverse" href="#/write?word=파란하늘">N행시 쓰기</a></div><div class="daily-recommendation"><p class="prompt-work-count">${visiblePromptPoems.length}개의 작품이 올라왔어요.</p>${recommended ? `<div class="featured-work"><div class="featured-work-label">가장 인기 있는 작품</div>${lines(recommended)}<div class="meta recommendation-meta">@${esc(recommended.authorName)} · ★ ${recommended.rating.toFixed(1)}</div></div>` : '<p class="muted featured-work-empty">아직 등록된 작품이 없습니다.</p>'}<a class="prompt-work-link" href="#/poems?q=${encodeURIComponent(promptWord)}">${promptWord} 작품 더 보기 →</a></div></section><div class="section-head home-section-head"><h1>지금 인기 있는 N행시</h1><a href="#/poems">전체 보기 →</a></div>${popular.length ? `<div class="trending-grid">${trendingFeed}<aside class="feed-ad" aria-label="가상 광고"><span>ADVERTISEMENT</span><strong>YOUR AD<br>COULD BE<br>HERE</strong><small>가상 광고 영역</small></aside></div>` : '<p class="empty">조건에 맞는 작품이 없습니다.</p>'}</div></div>`)
     },
     poems(q) {
         let k = (q.get("q") || "").toLowerCase(),
