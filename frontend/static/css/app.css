@@ -300,7 +300,7 @@ footer {
 .category-sidebar {
     padding-top: 28px;
     padding-right: 24px;
-    border-right: 1px solid var(--line)
+    border-right: 3px solid var(--line)
 }
 
 .category-sidebar h2 {
@@ -325,7 +325,12 @@ footer {
 }
 
 .filter-group + .filter-group {
-    margin-top: 34px
+    margin-top: 28px
+}
+
+.filter-group {
+    padding-top: 14px;
+    border-top: 1px solid var(--line)
 }
 
 .filter-group h3 {
@@ -363,7 +368,7 @@ footer {
     text-decoration: none
 }
 
-.filter-group a.is-active {
+.filter-group .is-active {
     position: relative;
     z-index: 0;
     width: max-content;
@@ -372,7 +377,7 @@ footer {
     text-decoration: none
 }
 
-.filter-group a.is-active::after {
+.filter-group .is-active::after {
     position: absolute;
     z-index: -1;
     right: -3px;
@@ -385,7 +390,7 @@ footer {
 }
 
 .difficulty-filter span[aria-disabled="true"] {
-    opacity: .5
+    opacity: 1
 }
 
 .sidebar-ad {
@@ -422,24 +427,28 @@ footer {
 }
 
 .sidebar-ad + .sidebar-ad {
-    margin-top: 12px
+    margin-top: 12px;
+    background: var(--secondary)
+}
+
+.sidebar-ad + .sidebar-ad span {
+    background: var(--cta)
 }
 
 .daily-overview {
     display: grid;
-    grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
-    column-gap: 64px;
-    padding-bottom: 8px
+    grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+    border-bottom: 3px solid var(--line)
 }
 
 .daily-prompt {
-    padding: 32px 0 34px
+    padding: 34px 38px 38px 0
 }
 
 .daily-prompt h1 {
     font-family: "Noto Sans KR", "Malgun Gothic", sans-serif;
-    font-size: clamp(40px, 4vw, 46px);
-    font-weight: 600;
+    font-size: clamp(48px, 5vw, 58px);
+    font-weight: 700;
     line-height: 1.05;
     margin: 8px 0 0
 }
@@ -473,14 +482,27 @@ footer {
 }
 
 .daily-recommendation {
-    padding: 42px 0 34px
+    align-self: stretch;
+    margin: 0;
+    padding: 28px 28px 28px 30px;
+    border-left: 3px solid var(--line)
 }
 
-.daily-recommendation-label {
+.prompt-work-count {
+    margin: 0;
+    color: var(--muted);
+    font-size: 13px
+}
+
+.featured-work {
+    margin-top: 22px
+}
+
+.featured-work-label {
+    margin-bottom: 10px;
     color: var(--cta);
-    font-size: 13px;
-    font-weight: 650;
-    margin-bottom: 10px
+    font-size: 11px;
+    font-weight: 700
 }
 
 .daily-recommendation .meta {
@@ -491,9 +513,32 @@ footer {
     padding-top: 0
 }
 
+.featured-work-empty {
+    margin: 22px 0 0;
+    font-size: 13px
+}
+
+.prompt-work-link {
+    display: inline-block;
+    margin-top: 22px;
+    color: var(--ink);
+    font-size: 13px;
+    font-weight: 700;
+    text-decoration: underline;
+    text-decoration-color: var(--secondary);
+    text-decoration-thickness: 3px;
+    text-underline-offset: 4px
+}
+
+.prompt-work-link:hover,
+.prompt-work-link:focus-visible {
+    color: var(--primary)
+}
+
 .home-section-head {
     margin: 0 !important;
-    padding-top: 24px
+    padding: 26px 0 12px;
+    border-bottom: 3px solid var(--line)
 }
 
 .home-section-head h1,
@@ -520,8 +565,8 @@ footer {
     transform: rotate(-.5deg)
 }
 
-.trending-list h2,
-.trending-list h3 {
+.trending-grid h2,
+.trending-grid h3 {
     font-family: "Noto Sans KR", "Malgun Gothic", sans-serif;
     font-weight: 600 !important;
     margin: 0
@@ -531,14 +576,20 @@ footer {
     display: flex;
     align-items: baseline;
     gap: 8px;
-    margin-bottom: 10px
+    margin-bottom: 8px
 }
 
 .community-rank {
     color: var(--primary);
-    font-size: 16px;
-    font-weight: 700;
+    font-family: "Noto Sans KR", "Malgun Gothic", sans-serif;
+    font-size: clamp(34px, 4vw, 44px);
+    font-weight: 800;
+    line-height: .95;
     white-space: nowrap
+}
+
+.community-content {
+    min-width: 0
 }
 
 .hot-label {
@@ -551,7 +602,6 @@ footer {
 }
 
 .line-count {
-    margin-left: auto;
     padding: 1px 4px;
     background: var(--secondary);
     color: var(--ink);
@@ -560,39 +610,98 @@ footer {
     white-space: nowrap
 }
 
-.trending-list > :nth-child(even) .line-count {
+.trending-item:nth-child(even) .line-count {
     background: var(--accent)
 }
 
-.trending-list {
+.trending-grid {
     display: grid;
-    grid-template-columns: 1fr;
-    gap: 0
+    grid-template-columns: minmax(0, 2fr) minmax(240px, .8fr);
+    gap: 0 40px
 }
 
-.trending-list .card {
+.trending-item {
+    grid-column: 1
+}
+
+.trending-item:nth-child(n + 3) {
+    grid-column: 1 / -1
+}
+
+.trending-grid .card {
     background: transparent;
-    padding: 14px 0 18px
+    padding: 20px 0 22px
 }
 
-.trending-list .card-body {
-    display: flex;
-    flex-direction: column;
+.trending-grid .card-body {
+    display: grid;
+    grid-template-columns: 72px minmax(0, 1fr);
+    gap: 18px;
     height: 100%;
     padding: 0
 }
 
-.trending-list > .card + .card,
-.trending-list > * + * .card {
-    border-top: 1px solid var(--line) !important
+.trending-item:not(:first-child) .card {
+    border-top: 3px solid var(--line) !important
 }
 
-.trending-list .meta {
+.trending-grid .meta {
     border-top: 0;
     display: block;
     font-size: 13px;
     padding-top: 0;
     margin-top: 8px
+}
+
+.daily-overview .poem-line,
+.trending-grid .poem-line {
+    grid-template-columns: 42px minmax(0, 1fr);
+    line-height: 1.75
+}
+
+.daily-overview .poem-line strong,
+.daily-overview .poem-line b,
+.trending-grid .poem-line strong,
+.trending-grid .poem-line b {
+    font-size: 22px;
+    font-weight: 800;
+    line-height: 1.4
+}
+
+.feed-ad {
+    display: flex;
+    grid-column: 2;
+    grid-row: 1 / span 2;
+    flex-direction: column;
+    align-items: flex-start;
+    align-self: stretch;
+    padding: 24px;
+    background: var(--surface);
+    border: 3px solid var(--line);
+    border-top-color: var(--secondary);
+    color: var(--ink)
+}
+
+.feed-ad span {
+    padding: 2px 5px;
+    background: var(--primary);
+    color: var(--surface);
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: .06em
+}
+
+.feed-ad strong {
+    margin-top: 22px;
+    font-size: clamp(24px, 3vw, 34px);
+    font-weight: 800;
+    line-height: 1.08
+}
+
+.feed-ad small {
+    margin-top: 18px;
+    color: var(--muted);
+    font-size: 10px
 }
 
 .explore-grid .card,
@@ -852,7 +961,7 @@ label {
         grid-template-columns: 1fr 1fr;
         gap: 24px;
         border-right: 0;
-        border-bottom: 1px solid var(--line);
+        border-bottom: 2px solid var(--line);
         padding: 20px 0 24px
     }
 
@@ -862,7 +971,7 @@ label {
     }
 
     .sidebar-ad {
-        grid-column: 1 / -1;
+        grid-column: auto;
         margin-top: 0
     }
 
@@ -912,8 +1021,61 @@ label {
     }
 
     .daily-recommendation {
-        border-top: 1px solid var(--line);
-        padding: 36px 0 30px
+        align-self: auto;
+        margin: 0;
+        padding: 24px 0 26px 22px;
+        border-top: 0
+    }
+
+    .daily-prompt h1 {
+        font-size: clamp(42px, 12vw, 50px)
+    }
+
+    .trending-grid {
+        grid-template-columns: 1fr;
+        gap: 0
+    }
+
+    .trending-item,
+    .trending-item:nth-child(n + 3) {
+        grid-column: 1
+    }
+
+    .trending-grid .card-body {
+        grid-template-columns: 48px minmax(0, 1fr);
+        gap: 10px
+    }
+
+    .feed-ad {
+        display: grid;
+        grid-column: 1;
+        grid-row: auto;
+        grid-template-columns: auto minmax(0, 1fr) auto;
+        align-items: center;
+        gap: 14px;
+        margin-top: 18px;
+        padding: 18px
+    }
+
+    .feed-ad strong,
+    .feed-ad small {
+        margin-top: 0
+    }
+
+    .feed-ad strong {
+        font-size: 20px
+    }
+
+    .feed-ad strong br {
+        display: none
+    }
+
+    .community-rank {
+        font-size: 28px
+    }
+
+    .community-heading {
+        flex-wrap: wrap
     }
 
     .grid {
