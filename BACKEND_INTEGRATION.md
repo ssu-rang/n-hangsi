@@ -6,7 +6,7 @@
 
 | 기능 | 메서드 | URL | 인증 |
 |---|---|---|---|
-| 홈/필터 | GET | `/`, `?lines=all\|2\|3\|4\|5plus` | 공개 |
+| 홈/필터 | GET | `/`, `?lines=all\|2\|3\|4\|5` | 공개 |
 | 작품 목록/검색 | GET | `/poems?keyword=` | 공개 |
 | 작품 상세/작성 화면 | GET | `/poems/:id`, `/poems/new?word=` | 공개 |
 | 작품 등록 | POST | `/poems` | 공개 |

@@ -28,8 +28,8 @@ export function validatePoem(body: Fields): ValidationResult<PoemForm> {
 
   if (/\s/u.test(word)) {
     errors.word = '제시어에는 공백을 넣을 수 없습니다.';
-  } else if (characters.length < 2 || characters.length > 6) {
-    errors.word = '제시어는 2~6자여야 합니다.';
+  } else if (characters.length < 2 || characters.length > 5) {
+    errors.word = '제시어는 2~5자여야 합니다.';
   }
 
   if (lines.length !== characters.length) {
@@ -73,4 +73,3 @@ function extractLines(body: Fields): string[] {
     .sort((left, right) => Number(left.index) - Number(right.index))
     .map(entry => String(entry.value ?? '').trim());
 }
-

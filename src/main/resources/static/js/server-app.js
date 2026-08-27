@@ -7,7 +7,8 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!wordInput || !linesContainer) return;
 
     const renderLineInputs = () => {
-        const characters = Array.from(wordInput.value.trim());
+        const characters = Array.from(wordInput.value.trim()).slice(0, 5);
+        wordInput.value = characters.join("");
         const previousValues = Array.from(linesContainer.querySelectorAll("input")).map(input => input.value);
         linesContainer.replaceChildren(...characters.map((character, index) => {
             const group = document.createElement("div");

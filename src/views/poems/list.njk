@@ -1,1 +1,76 @@
-<!doctype html><html lang="ko"><head>{% set title='둘러보기' %}{% include '_head.njk' %}</head><body class="interior-page explore-page">{% include '_header.njk' %}<main class="container py-5"><div class="page-label">EXPLORE</div><h1 class="section-title">작품 찾기</h1><p class="text-secondary mb-4">단어나 문장으로 취향에 맞는 N행시를 찾아보세요.</p><form class="row g-2 mb-4 explore-search" method="get" action="/poems"><div class="col"><label class="visually-hidden" for="keyword">검색어</label><input id="keyword" class="form-control form-control-lg" name="keyword" value="{{ keyword }}" placeholder="단어 또는 내용 검색"></div><div class="col-auto"><button class="btn btn-primary btn-lg">검색</button></div></form><div class="row g-3 explore-grid">{% for poem in poems %}<div class="col-12"><article class="card poem-card shadow-sm"><div class="card-body p-4"><div class="d-flex justify-content-between"><h2 class="h4 fw-bold">{{ poem.word }}</h2><span class="rating">★ {{ poem.rating }}</span></div>{% for line in poem.lines %}<div class="poem-line"><strong>{{ poem.word[loop.index0] }}</strong><span>{{ line }}</span></div>{% endfor %}<a class="stretched-link" href="/poems/{{ poem.id }}"><span class="visually-hidden">상세 보기</span></a></div></article></div>{% endfor %}</div>{% if not poems.length %}<div class="empty-state"><h2>검색 결과가 없습니다</h2><p class="text-secondary">다른 검색어를 입력해 보세요.</p></div>{% endif %}</main>{% include '_footer.njk' %}</body></html>
+<!doctype html>
+<html lang="ko">
+<head>
+    {% set title='N행시 마당' %}
+    {% include '_head.njk' %}
+</head>
+<body class="interior-page explore-page">
+{% include '_header.njk' %}
+<main class="container py-5">
+    <div class="combined-poems-layout">
+    <section class="combined-explore" aria-labelledby="find-poems-title">
+    <div class="combined-section-head">
+        <h2 id="find-poems-title">작품 찾기</h2>
+    </div>
+    <form class="row g-2 mb-4 explore-search" method="get" action="/poems">
+        <div class="col">
+            <label class="visually-hidden" for="keyword">검색어</label>
+            <input id="keyword" class="form-control form-control-lg" name="keyword"
+                   value="{{ keyword }}" placeholder="단어 또는 내용 검색">
+        </div>
+        <div class="col-auto"><button class="btn btn-primary btn-lg">검색</button></div>
+    </form>
+    <div class="explore-ranking-list">
+        {% for rank in [1,2,3,4,5] %}
+        {% set poem=poems[rank - 1] %}
+        <div class="explore-ranking-item{% if not poem %} is-empty{% endif %}">
+            <article class="card poem-card h-100">
+                <div class="card-body">
+                    <div class="community-content">
+                        {% if poem %}
+                        <div class="community-heading">
+                            <h2 class="h4 fw-bold"><a class="poem-title-link" href="/poems/{{ poem.id }}">{{ poem.word }}</a></h2>
+                            <span class="line-count">{{ poem.word.length }}행시</span>
+                        </div>
+                        {% for line in poem.lines %}
+                        <div class="poem-line">
+                            <strong>{{ poem.word[loop.index0] }}</strong><span>{{ line }}</span>
+                        </div>
+                        {% endfor %}
+                        <div class="meta">
+                            @{{ poem.authorName }} · 평점 {{ poem.rating }} · 댓글 {{ poem.commentCount }}
+                            {% if poem.createdAt %} · {{ poem.createdAt }}{% endif %}
+                        </div>
+                        {% else %}
+                        <p class="popular-slot-empty">{% if keyword %}검색된 작품이 없습니다.{% else %}새로운 작품을 기다리고 있어요.{% endif %}</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </article>
+        </div>
+        {% endfor %}
+    </div>
+    <nav class="poem-pagination" aria-label="작품 목록 페이지">
+        {% if currentPage > 1 %}
+        <a class="pagination-arrow" href="/poems?keyword={{ keyword | urlencode }}&page={{ currentPage - 1 }}" aria-label="이전 페이지">&lt;</a>
+        {% else %}
+        <span class="pagination-arrow is-disabled" aria-disabled="true">&lt;</span>
+        {% endif %}
+        {% for pageNumber in pages %}
+        <a href="/poems?keyword={{ keyword | urlencode }}&page={{ pageNumber }}"
+           class="{% if pageNumber == currentPage %}is-active{% endif %}"
+           {% if pageNumber == currentPage %}aria-current="page"{% endif %}>{{ pageNumber }}</a>
+        {% endfor %}
+        {% if currentPage < totalPages %}
+        <a class="pagination-arrow" href="/poems?keyword={{ keyword | urlencode }}&page={{ currentPage + 1 }}" aria-label="다음 페이지">&gt;</a>
+        {% else %}
+        <span class="pagination-arrow is-disabled" aria-disabled="true">&gt;</span>
+        {% endif %}
+    </nav>
+    </section>
+    {% include 'poems/_write_form.njk' %}
+    </div>
+</main>
+{% include '_footer.njk' %}
+</body>
+</html>

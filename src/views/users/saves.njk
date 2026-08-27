@@ -1,1 +1,26 @@
-<!doctype html><html lang="ko"><head>{% set title='저장한 작품' %}{% include '_head.njk' %}</head><body class="interior-page explore-page">{% include '_header.njk' %}<main class="container py-5"><div class="page-label">SAVED</div><h1 class="section-title">저장한 작품</h1><div class="row g-3 mt-2">{% for poem in poems %}<div class="col-12"><article class="card poem-card shadow-sm"><div class="card-body p-4"><h2 class="h4 fw-bold">{{ poem.word }}</h2>{% for line in poem.lines %}<div class="poem-line"><strong>{{ poem.word[loop.index0] }}</strong><span>{{ line }}</span></div>{% endfor %}<a class="stretched-link" href="/poems/{{ poem.id }}"><span class="visually-hidden">상세 보기</span></a></div></article></div>{% endfor %}</div>{% if not poems.length %}<div class="empty-state"><h2>저장한 작품이 없습니다</h2></div>{% endif %}</main>{% include '_footer.njk' %}</body></html>
+<!doctype html>
+<html lang="ko">
+<head>{% set title='저장한 작품' %}{% include '_head.njk' %}</head>
+<body class="interior-page explore-page saves-page">
+{% include '_header.njk' %}
+<main class="container py-5">
+    <section class="page-head">
+        <h1 class="section-title">저장한 작품</h1>
+        <p class="text-secondary mb-0">다시 읽고 싶은 문장을 모아두었어요.</p>
+    </section>
+    <div class="explore-grid">
+        {% for poem in poems %}
+        <article class="card poem-card">
+            <div class="card-body p-4">
+                <div class="d-flex justify-content-between"><h2>{{ poem.word }}</h2><span class="rating">★ {{ poem.rating }}</span></div>
+                {% for line in poem.lines %}<div class="poem-line"><strong>{{ poem.word[loop.index0] }}</strong><span>{{ line }}</span></div>{% endfor %}
+                <a class="stretched-link" href="/poems/{{ poem.id }}"><span class="visually-hidden">상세 보기</span></a>
+            </div>
+        </article>
+        {% endfor %}
+    </div>
+    {% if not poems.length %}<div class="empty-state"><h2>저장한 작품이 없습니다</h2><p class="text-secondary">마음에 드는 작품을 저장해 보세요.</p></div>{% endif %}
+</main>
+{% include '_footer.njk' %}
+</body>
+</html>

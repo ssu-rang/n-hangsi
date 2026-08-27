@@ -1,1 +1,71 @@
-<!doctype html><html lang="ko"><head>{% set title='글쓰기' %}{% include '_head.njk' %}</head><body class="interior-page write-page">{% include '_header.njk' %}<main class="container py-5" style="max-width:800px"><div class="page-label">CREATE</div><h1 class="section-title">한 글자씩 이어볼까요?</h1><p class="text-secondary mb-4">완벽하지 않아도 괜찮아요. 짧고 솔직하게 작성해 보세요.</p><form class="card shadow-sm write-card" method="post" action="/poems"><input type="hidden" name="_csrf" value="{{ csrfToken }}"><div class="card-body p-4 p-lg-5"><label for="word" class="form-label fw-bold">제시어</label><input id="word" data-poem-word class="form-control form-control-lg" name="word" value="{{ form.word }}" minlength="2" maxlength="6" required placeholder="2~6글자 단어">{% if errors.word %}<div class="text-danger small mt-1">{{ errors.word }}</div>{% endif %}<div data-poem-preview class="form-text mb-4">제시어를 입력하세요.</div>{% if errors.lines %}<div class="text-danger small mb-2">{{ errors.lines }}</div>{% endif %}<div data-poem-lines>{% for line in form.lines %}<div class="mb-3"><label class="form-label fw-semibold" for="line-{{ loop.index0 }}">{{ form.word[loop.index0] }}로 시작하는 문장</label><input class="form-control" id="line-{{ loop.index0 }}" name="lines[{{ loop.index0 }}]" value="{{ line }}" maxlength="80" required>{% if errors['line' + loop.index0] %}<div class="text-danger small">{{ errors['line' + loop.index0] }}</div>{% endif %}</div>{% endfor %}</div><div class="d-flex justify-content-end gap-2 mt-4"><a class="btn btn-outline-secondary" href="/">취소</a><button class="btn btn-primary" type="submit">등록하기</button></div></div></form></main>{% include '_footer.njk' %}</body></html>
+<!doctype html>
+<html lang="ko">
+<head>
+    {% set title='글쓰기' %}
+    {% include '_head.njk' %}
+</head>
+<body class="interior-page write-page">
+{% include '_header.njk' %}
+<main class="container py-5 write-layout-shell">
+    <div class="write-layout">
+        <section class="write-main">
+            <section class="page-head">
+                <nav class="poem-page-tabs" aria-label="작품 메뉴">
+                    <a class="section-title" href="/poems">작품 찾기</a>
+                    <h1 class="section-title" aria-current="page">글쓰기</h1>
+                </nav>
+            </section>
+            <form class="card shadow-sm write-card" method="post" action="/poems">
+        <input type="hidden" name="_csrf" value="{{ csrfToken }}">
+        <div class="card-body p-4 p-lg-5">
+            <label for="word" class="form-label fw-bold">제시어</label>
+            <input id="word" data-poem-word class="form-control form-control-lg"
+                   name="word" value="{{ form.word }}" minlength="2" maxlength="5"
+                   required placeholder="2~5글자 단어">
+            {% if errors.word %}
+            <div class="text-danger small mt-1">{{ errors.word }}</div>
+            {% endif %}
+            <div data-poem-preview class="form-text mb-4">제시어를 입력하세요.</div>
+            {% if errors.lines %}
+            <div class="text-danger small mb-2">{{ errors.lines }}</div>
+            {% endif %}
+            <div data-poem-lines>
+                {% for line in form.lines %}
+                <div class="mb-3">
+                    <label class="form-label fw-semibold" for="line-{{ loop.index0 }}">
+                        {{ form.word[loop.index0] }}로 시작하는 문장
+                    </label>
+                    <input class="form-control" id="line-{{ loop.index0 }}"
+                           name="lines[{{ loop.index0 }}]" value="{{ line }}"
+                           maxlength="80" required>
+                    {% if errors['line' + loop.index0] %}
+                    <div class="text-danger small">{{ errors['line' + loop.index0] }}</div>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+            <div class="d-flex justify-content-end gap-2 mt-4">
+                <a class="btn btn-outline-secondary" href="/">취소</a>
+                <button class="btn btn-primary" type="submit">등록하기</button>
+            </div>
+        </div>
+            </form>
+        </section>
+        <aside class="word-list" aria-labelledby="word-list-title">
+            <div class="word-list-head">
+                <h2 id="word-list-title">단어 목록</h2>
+                <p>마음에 드는 단어를 골라보세요.</p>
+            </div>
+            <nav>
+                {% for word in suggestedWords %}
+                <a href="/poems/new?word={{ word | urlencode }}"{% if form.word == word %} class="is-active" aria-current="true"{% endif %}>
+                    <span>{{ word }}</span><small>{{ word.length }}행시</small>
+                </a>
+                {% endfor %}
+            </nav>
+        </aside>
+    </div>
+</main>
+{% include '_footer.njk' %}
+</body>
+</html>
