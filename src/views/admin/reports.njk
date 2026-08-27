@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="ko">
+<head>{% set title='신고 관리' %}{% include '_head.njk' %}</head>
+<body class="interior-page">
+{% include '_header.njk' %}
+<main class="container py-5">
+    <section class="page-head"><h1 class="section-title">신고 관리</h1></section>
+    {% if reports.length %}
+    <div class="table-responsive mt-4">
+        <table class="table align-middle">
+            <thead><tr><th>ID</th><th>작품</th><th>작성자</th><th>신고 사유</th><th>접수 시각</th><th>상태</th><th>처리</th></tr></thead>
+            <tbody>
+            {% for report in reports %}
+            <tr>
+                <td>{{ report.id }}</td>
+                <td>
+                    <div><strong>#{{ report.poemId }}{% if report.word %} · {{ report.word }}{% endif %}</strong></div>
+                    {% for line in report.lines %}<div class="small">{{ line }}</div>{% endfor %}
+                    {% if report.poemExists %}<a class="small" href="/poems/{{ report.poemId }}">작품 보기</a>
+                    {% else %}<span class="text-secondary small">삭제된 작품</span>{% endif %}
+                </td>
+                <td>{% if report.authorName %}{{ report.authorName }}{% if report.authorId %} (#{{ report.authorId }}){% endif %}{% else %}확인 불가{% endif %}</td>
+                <td class="text-break" style="min-width:180px">{{ report.reason }}</td>
+                <td>{{ report.createdAt }}</td>
+                <td><span class="badge text-bg-{% if report.status == 'pending' %}warning{% elif report.status == 'resolved' %}success{% else %}secondary{% endif %}">{{ report.status }}</span></td>
+                <td>
+                    <div class="d-flex flex-column gap-2" style="min-width:110px">
+                        <form method="post" action="/admin/reports/{{ report.id }}/reject"><input type="hidden" name="_csrf" value="{{ csrfToken }}"><button class="btn btn-sm btn-outline-secondary w-100">유지</button></form>
+                        <form method="post" action="/admin/reports/{{ report.id }}/resolve"><input type="hidden" name="_csrf" value="{{ csrfToken }}"><button class="btn btn-sm btn-outline-primary w-100">처리 완료</button></form>
+                        {% if report.poemExists %}<form method="post" action="/admin/reports/{{ report.id }}/delete-poem"><input type="hidden" name="_csrf" value="{{ csrfToken }}"><button class="btn btn-sm btn-danger w-100">삭제</button></form>{% endif %}
+                    </div>
+                </td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}<div class="empty-state"><h2>접수된 신고가 없습니다</h2></div>{% endif %}
+</main>
+{% include '_footer.njk' %}
+</body>
+</html>

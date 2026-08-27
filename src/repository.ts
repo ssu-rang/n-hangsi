@@ -49,6 +49,21 @@ export interface CommentView {
   createdAt: string | null;
 }
 
+export type ReportStatus = 'pending' | 'resolved' | 'rejected';
+
+export interface ReportView {
+  id: number;
+  poemId: number;
+  poemExists: boolean;
+  word: string | null;
+  lines: string[];
+  authorId: number | null;
+  authorName: string | null;
+  reason: string;
+  status: ReportStatus;
+  createdAt: string | null;
+}
+
 interface PoemRow {
   id: number;
   word: string;
@@ -76,6 +91,25 @@ interface ProfileStatsRow {
 
 interface PoemIdRow {
   poem_id: number;
+}
+
+interface PendingVerificationRow {
+  email: string;
+  nickname: string;
+  password_hash: string;
+}
+
+interface ReportRow {
+  id: number;
+  poem_id: number | null;
+  reported_poem_id: number;
+  word: string | null;
+  lines_text: string | null;
+  author_id: number | null;
+  author_name: string | null;
+  reason: string;
+  status: ReportStatus;
+  created_at: string;
 }
 
 export function createRepository(database: DatabaseSync) {
@@ -110,6 +144,42 @@ export function createRepository(database: DatabaseSync) {
       .run(username.toLowerCase(), nickname, password, provider, providerUserId);
 
     return findUserById(Number(result.lastInsertRowid))!;
+  }
+
+  function savePendingEmailVerification(
+    email: string,
+    nickname: string,
+    passwordHash: string,
+    tokenHash: string,
+    expiresAt: number,
+  ): void {
+    database.prepare('DELETE FROM pending_email_verifications WHERE expires_at <= ?').run(Date.now());
+    database.prepare(`
+      INSERT INTO pending_email_verifications(
+        email, nickname, password_hash, token_hash, expires_at, created_at
+      ) VALUES (?, ?, ?, ?, ?, ?)
+      ON CONFLICT(email) DO UPDATE SET
+        nickname = excluded.nickname,
+        password_hash = excluded.password_hash,
+        token_hash = excluded.token_hash,
+        expires_at = excluded.expires_at,
+        created_at = excluded.created_at
+    `).run(email.toLowerCase(), nickname, passwordHash, tokenHash, expiresAt, Date.now());
+  }
+
+  function consumePendingEmailVerification(tokenHash: string): PendingVerificationRow | undefined {
+    const pending = database.prepare(`
+      SELECT email, nickname, password_hash
+      FROM pending_email_verifications
+      WHERE token_hash = ? AND expires_at > ?
+    `).get(tokenHash, Date.now()) as unknown as PendingVerificationRow | undefined;
+    if (!pending) return undefined;
+    database.prepare('DELETE FROM pending_email_verifications WHERE email = ?').run(pending.email);
+    return pending;
+  }
+
+  function deletePendingEmailVerification(email: string): void {
+    database.prepare('DELETE FROM pending_email_verifications WHERE email = ?').run(email.toLowerCase());
   }
 
   function listPoems(keyword = '', viewerId: number | null = null): PoemView[] {
@@ -177,6 +247,65 @@ export function createRepository(database: DatabaseSync) {
       .run(userId, poemId, score);
   }
 
+  function createReport(poemId: number, reporterUserId: number, reason: string): 'created' | 'duplicate' {
+    const result = database.prepare(`
+      INSERT OR IGNORE INTO reports(
+        poem_id, reported_poem_id, reporter_user_id,
+        poem_word, poem_lines_text, poem_author_id, poem_author_name, reason
+      )
+      SELECT id, id, ?, word, lines_text, author_id, author_name, ?
+      FROM poems WHERE id = ?
+    `).run(reporterUserId, reason, poemId);
+    return result.changes === 1 ? 'created' : 'duplicate';
+  }
+
+  function listReports(): ReportView[] {
+    const rows = database.prepare(`
+      SELECT r.*,
+        COALESCE(p.word, r.poem_word) word,
+        COALESCE(p.lines_text, r.poem_lines_text) lines_text,
+        COALESCE(p.author_id, r.poem_author_id) author_id,
+        COALESCE(p.author_name, r.poem_author_name) author_name
+      FROM reports r
+      LEFT JOIN poems p ON p.id = r.poem_id
+      ORDER BY CASE r.status WHEN 'pending' THEN 0 ELSE 1 END,
+               r.created_at DESC, r.id DESC
+    `).all() as unknown as ReportRow[];
+    return rows.map(row => ({
+      id: row.id,
+      poemId: row.reported_poem_id,
+      poemExists: row.poem_id !== null,
+      word: row.word,
+      lines: row.lines_text?.split(LINE_SEPARATOR) ?? [],
+      authorId: row.author_id,
+      authorName: row.author_name,
+      reason: row.reason,
+      status: row.status,
+      createdAt: formatDateTime(row.created_at),
+    }));
+  }
+
+  function updateReportStatus(reportId: number, status: ReportStatus): boolean {
+    return database.prepare('UPDATE reports SET status = ? WHERE id = ?').run(status, reportId).changes === 1;
+  }
+
+  function deleteReportedPoem(reportId: number): 'deleted' | 'not-found' {
+    const report = database.prepare('SELECT poem_id FROM reports WHERE id = ?')
+      .get(reportId) as unknown as { poem_id: number | null } | undefined;
+    if (!report?.poem_id) return 'not-found';
+
+    database.exec('BEGIN IMMEDIATE');
+    try {
+      database.prepare("UPDATE reports SET status = 'resolved' WHERE poem_id = ?").run(report.poem_id);
+      const result = database.prepare('DELETE FROM poems WHERE id = ?').run(report.poem_id);
+      database.exec('COMMIT');
+      return result.changes === 1 ? 'deleted' : 'not-found';
+    } catch (error) {
+      database.exec('ROLLBACK');
+      throw error;
+    }
+  }
+
   function saved(userId: number): PoemView[] {
     const savedPoems = database
       .prepare('SELECT poem_id FROM saved_poems WHERE user_id = ? ORDER BY id DESC')
@@ -237,6 +366,9 @@ export function createRepository(database: DatabaseSync) {
     findLocalUser,
     findProviderUser,
     createUser,
+    savePendingEmailVerification,
+    consumePendingEmailVerification,
+    deletePendingEmailVerification,
     listPoems,
     getPoem,
     createPoem,
@@ -245,6 +377,10 @@ export function createRepository(database: DatabaseSync) {
     save,
     unsave,
     rate,
+    createReport,
+    listReports,
+    updateReportStatus,
+    deleteReportedPoem,
     saved,
     profile,
     close: () => database.close(),

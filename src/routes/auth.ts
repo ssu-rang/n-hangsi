@@ -1,8 +1,8 @@
 import bcrypt from 'bcryptjs';
-import { randomBytes } from 'node:crypto';
-import type { FastifyInstance, FastifyRequest } from 'fastify';
+import { createHash, randomBytes } from 'node:crypto';
+import type { FastifyInstance } from 'fastify';
 import { bodyOf, queryOf } from '../request.js';
-import type { Repository } from '../types.js';
+import type { EmailSender, Repository } from '../types.js';
 import { validateSignup } from '../validation.js';
 
 interface GoogleToken {
@@ -15,13 +15,19 @@ interface GoogleUserInfo {
   name?: string;
 }
 
-export function registerAuthRoutes(app: FastifyInstance, repo: Repository): void {
+export function registerAuthRoutes(
+  app: FastifyInstance,
+  repo: Repository,
+  emailSender: EmailSender,
+  appBaseUrl: string,
+): void {
   app.get('/login', async (request, reply) => {
     const query = queryOf(request);
     return reply.view('auth/login.njk', {
       error: 'error' in query,
       oauthError: 'oauthError' in query,
       registered: 'registered' in query,
+      verified: 'verified' in query,
     });
   });
 
@@ -34,13 +40,18 @@ export function registerAuthRoutes(app: FastifyInstance, repo: Repository): void
 
     if (!user || !passwordMatches) return reply.redirect('/login?error');
 
+    await request.session.regenerate();
     request.session.userId = user.id;
     await request.session.save();
     return reply.redirect('/');
   });
 
-  app.get('/signup', async (_request, reply) => {
-    return reply.view('auth/signup.njk', { form: {}, errors: {} });
+  app.get('/signup', async (request, reply) => {
+    return reply.view('auth/signup.njk', {
+      form: {},
+      errors: {},
+      verificationError: 'verificationError' in queryOf(request),
+    });
   });
 
   app.post('/signup', async (request, reply) => {
@@ -51,12 +62,43 @@ export function registerAuthRoutes(app: FastifyInstance, repo: Repository): void
       return reply.view('auth/signup.njk', { form, errors });
     }
 
+    const token = randomBytes(32).toString('base64url');
+    repo.savePendingEmailVerification(
+      form.email,
+      form.nickname,
+      await bcrypt.hash(form.password, 12),
+      hashToken(token),
+      Date.now() + 30 * 60_000,
+    );
+    try {
+      const verificationUrl = `${normalizedBaseUrl(appBaseUrl)}/verify-email?token=${encodeURIComponent(token)}`;
+      await emailSender.sendVerification(form.email, verificationUrl);
+      return reply.redirect(`/signup/check-email?email=${encodeURIComponent(form.email)}`);
+    } catch (error) {
+      repo.deletePendingEmailVerification(form.email);
+      request.log.error(error);
+      errors.email = '인증 메일을 보내지 못했습니다. 잠시 후 다시 시도해 주세요.';
+      return reply.view('auth/signup.njk', { form, errors }, 503);
+    }
+  });
+
+  app.get('/signup/check-email', async (request, reply) => {
+    return reply.view('auth/check-email.njk', { email: queryOf(request).email ?? '' });
+  });
+
+  app.get('/verify-email', async (request, reply) => {
+    const token = queryOf(request).token;
+    if (!token) return reply.redirect('/signup?verificationError');
+    const pending = repo.consumePendingEmailVerification(hashToken(token));
+    if (!pending || repo.findLocalUser(pending.email)) {
+      return reply.redirect('/signup?verificationError');
+    }
     repo.createUser({
-      username: form.email,
-      nickname: form.nickname,
-      password: await bcrypt.hash(form.password, 12),
+      username: pending.email,
+      nickname: pending.nickname,
+      password: pending.password_hash,
     });
-    return reply.redirect('/login?registered');
+    return reply.redirect('/login?verified');
   });
 
   app.post('/logout', async (request, reply) => {
@@ -73,7 +115,7 @@ export function registerAuthRoutes(app: FastifyInstance, repo: Repository): void
 
     const params = new URLSearchParams({
       client_id: credentials.clientId,
-      redirect_uri: googleCallbackUrl(request),
+      redirect_uri: googleCallbackUrl(),
       response_type: 'code',
       scope: 'openid profile email',
       state,
@@ -89,7 +131,7 @@ export function registerAuthRoutes(app: FastifyInstance, repo: Repository): void
 
     delete request.session.oauthState;
     try {
-      const profile = await fetchGoogleProfile(query.code, googleCallbackUrl(request), credentials);
+      const profile = await fetchGoogleProfile(query.code, googleCallbackUrl(), credentials);
       let user = repo.findProviderUser('google', profile.sub);
 
       if (!user) {
@@ -98,6 +140,7 @@ export function registerAuthRoutes(app: FastifyInstance, repo: Repository): void
         user = repo.createUser({ username, nickname, provider: 'google', providerUserId: profile.sub });
       }
 
+      await request.session.regenerate();
       request.session.userId = user.id;
       await request.session.save();
       return reply.redirect('/');
@@ -107,14 +150,28 @@ export function registerAuthRoutes(app: FastifyInstance, repo: Repository): void
   });
 }
 
+function hashToken(token: string): string {
+  return createHash('sha256').update(token).digest('hex');
+}
+
+function normalizedBaseUrl(value: string): string {
+  const url = new URL(value);
+  if (url.protocol !== 'http:' && url.protocol !== 'https:') {
+    throw new Error('APP_BASE_URL must use HTTP or HTTPS');
+  }
+  return url.toString().replace(/\/$/, '');
+}
+
 function googleCredentials(): { clientId: string; clientSecret: string } | null {
   const clientId = process.env.GOOGLE_CLIENT_ID;
   const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
   return clientId && clientSecret ? { clientId, clientSecret } : null;
 }
 
-function googleCallbackUrl(request: FastifyRequest): string {
-  return `${request.protocol}://${request.host}/login/oauth2/code/google`;
+function googleCallbackUrl(): string {
+  const configured = process.env.GOOGLE_REDIRECT_URI;
+  if (!configured) throw new Error('GOOGLE_REDIRECT_URI is required for Google OAuth');
+  return configured;
 }
 
 async function fetchGoogleProfile(
@@ -143,4 +200,3 @@ async function fetchGoogleProfile(
 
   return profileResponse.json() as Promise<GoogleUserInfo>;
 }
-

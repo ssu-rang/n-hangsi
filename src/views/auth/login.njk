@@ -1,1 +1,30 @@
-<!doctype html><html lang="ko"><head>{% set title='로그인' %}{% include '_head.njk' %}</head><body class="interior-page auth-page"><main class="container d-grid align-items-center min-vh-100 py-4"><section class="card shadow-sm mx-auto w-100" style="max-width:430px"><div class="card-body p-4 p-lg-5"><a class="navbar-brand fw-black d-flex align-items-center gap-2 mb-4" href="/"><span class="brand-mark">N</span>N행시</a><div class="page-label">WELCOME BACK</div><h1 class="h3 fw-black mb-4">다시 만나서 반가워요</h1>{% if error %}<div class="alert alert-danger">이메일 또는 비밀번호를 확인해 주세요.</div>{% endif %}{% if oauthError %}<div class="alert alert-danger">소셜 로그인에 실패했습니다. 다시 시도해 주세요.</div>{% endif %}{% if registered %}<div class="alert alert-success">가입되었습니다. 로그인해 주세요.</div>{% endif %}{% if oauthEnabled %}<div class="d-grid gap-2 mb-4"><a class="btn btn-outline-dark" href="/oauth2/authorization/google">Google로 계속하기</a></div>{% endif %}<form method="post" action="/login"><input type="hidden" name="_csrf" value="{{ csrfToken }}"><div class="mb-3"><label for="username" class="form-label">이메일</label><input id="username" name="username" type="email" class="form-control" required autocomplete="username"></div><div class="mb-4"><label for="password" class="form-label">비밀번호</label><input id="password" name="password" type="password" class="form-control" required autocomplete="current-password"></div><button class="btn btn-primary w-100">로그인</button></form><a class="btn btn-link w-100 mt-2" href="/signup">회원가입</a></div></section></main>{% include '_footer.njk' %}</body></html>
+<!doctype html>
+<html lang="ko">
+<head>{% set title='로그인' %}{% include '_head.njk' %}</head>
+<body class="interior-page auth-page">
+<main class="auth-shell">
+    <section class="auth-intro">
+        <a class="navbar-brand" href="/" aria-label="N행시 홈">
+            <span class="brand-logo-crop"><img class="brand-logo" src="/images/nhangsi-logo.png" alt=""></span>
+        </a>
+        <h1>다시 만나서<br>반가워요</h1>
+    </section>
+    <section class="auth-card">
+        <h2>로그인</h2>
+        {% if error %}<div class="alert alert-danger">이메일 또는 비밀번호를 확인해 주세요.</div>{% endif %}
+        {% if oauthError %}<div class="alert alert-danger">소셜 로그인에 실패했습니다. 다시 시도해 주세요.</div>{% endif %}
+        {% if registered %}<div class="alert alert-success">가입되었습니다. 로그인해 주세요.</div>{% endif %}
+        {% if verified %}<div class="alert alert-success">이메일 인증이 완료되었습니다. 로그인해 주세요.</div>{% endif %}
+        {% include 'auth/_google_button.njk' %}
+        <form method="post" action="/login">
+            <input type="hidden" name="_csrf" value="{{ csrfToken }}">
+            <div class="mb-3"><label for="username" class="form-label">이메일</label><input id="username" name="username" type="email" class="form-control" required autocomplete="username"></div>
+            <div class="mb-4"><label for="password" class="form-label">비밀번호</label><input id="password" name="password" type="password" class="form-control" required autocomplete="current-password"></div>
+            <button class="btn btn-primary w-100">로그인</button>
+        </form>
+        <p class="auth-switch">처음이신가요? <a href="/signup">회원가입</a></p>
+    </section>
+</main>
+{% include '_footer.njk' %}
+</body>
+</html>

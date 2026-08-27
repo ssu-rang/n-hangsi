@@ -47,10 +47,49 @@ export function createDatabase(filename: string = process.env.DATABASE_PATH || '
       score INTEGER NOT NULL CHECK(score BETWEEN 1 AND 5),
       UNIQUE(user_id, poem_id)
     );
+    CREATE TABLE IF NOT EXISTS pending_email_verifications (
+      email TEXT PRIMARY KEY,
+      nickname TEXT NOT NULL,
+      password_hash TEXT NOT NULL,
+      token_hash TEXT NOT NULL UNIQUE,
+      expires_at INTEGER NOT NULL,
+      created_at INTEGER NOT NULL
+    );
+    CREATE TABLE IF NOT EXISTS reports (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      poem_id INTEGER REFERENCES poems(id) ON DELETE SET NULL,
+      reported_poem_id INTEGER NOT NULL,
+      reporter_user_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
+      poem_word TEXT,
+      poem_lines_text TEXT,
+      poem_author_id INTEGER,
+      poem_author_name TEXT,
+      reason TEXT NOT NULL CHECK(length(reason) BETWEEN 3 AND 500),
+      status TEXT NOT NULL DEFAULT 'pending'
+        CHECK(status IN ('pending', 'resolved', 'rejected')),
+      created_at TEXT NOT NULL DEFAULT (datetime('now', 'localtime')),
+      UNIQUE(poem_id, reporter_user_id)
+    );
+    CREATE INDEX IF NOT EXISTS idx_email_verification_expiry
+      ON pending_email_verifications(expires_at);
+    CREATE INDEX IF NOT EXISTS idx_reports_status_created
+      ON reports(status, created_at DESC, id DESC);
+    CREATE INDEX IF NOT EXISTS idx_reports_poem ON reports(poem_id);
     CREATE INDEX IF NOT EXISTS idx_poems_author ON poems(author_id, created_at DESC);
     CREATE INDEX IF NOT EXISTS idx_comments_poem ON comments(poem_id, created_at);
     CREATE INDEX IF NOT EXISTS idx_saved_user ON saved_poems(user_id, id DESC);
     CREATE INDEX IF NOT EXISTS idx_ratings_poem ON ratings(poem_id);
   `);
+  ensureColumn(db, 'reports', 'poem_word', 'TEXT');
+  ensureColumn(db, 'reports', 'poem_lines_text', 'TEXT');
+  ensureColumn(db, 'reports', 'poem_author_id', 'INTEGER');
+  ensureColumn(db, 'reports', 'poem_author_name', 'TEXT');
   return db;
+}
+
+function ensureColumn(database: DatabaseSync, table: string, column: string, definition: string): void {
+  const columns = database.prepare(`PRAGMA table_info(${table})`).all() as unknown as Array<{ name: string }>;
+  if (!columns.some(candidate => candidate.name === column)) {
+    database.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${definition}`);
+  }
 }

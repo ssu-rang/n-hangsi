@@ -7,9 +7,11 @@ import { randomBytes } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { createDatabase } from './db.js';
+import { createEmailSenderFromEnvironment } from './email.js';
 import { bodyOf } from './request.js';
 import { createRepository } from './repository.js';
 import { registerAuthRoutes } from './routes/auth.js';
+import { registerAdminRoutes } from './routes/admin.js';
 import { registerPoemRoutes } from './routes/poems.js';
 import { registerUserRoutes } from './routes/users.js';
 import type { AppOptions, Repository } from './types.js';
@@ -17,7 +19,7 @@ import type { AppOptions, Repository } from './types.js';
 const sourceRoot = join(process.cwd(), 'src');
 const protectedPaths = [
   /^\/profile(?:\/|$)/,
-  /^\/poems\/\d+\/(comments|saves|ratings)$/,
+  /^\/poems\/\d+\/(comments|saves|ratings|reports)$/,
 ];
 
 const staticAssets = [
@@ -27,27 +29,33 @@ const staticAssets = [
 ] as const;
 
 export async function buildApp(options: AppOptions = {}): Promise<FastifyInstance> {
-  ensureProductionConfiguration();
+  const sessionSecret = options.sessionSecret ?? process.env.SESSION_SECRET;
+  const appBaseUrl = options.appBaseUrl ?? process.env.APP_BASE_URL ?? 'http://localhost:8080';
+  ensureConfiguration(sessionSecret, appBaseUrl, Boolean(options.appBaseUrl));
 
-  const app = Fastify({ logger: options.logger ?? false, trustProxy: true });
+  const app = Fastify({
+    logger: options.logger ?? false,
+    trustProxy: options.trustProxy ?? configuredTrustProxy(),
+  });
   const database = options.db ?? createDatabase(options.databasePath ?? process.env.DATABASE_PATH);
   const repository = createRepository(database);
+  const emailSender = options.emailSender ?? createEmailSenderFromEnvironment();
 
-  await registerCorePlugins(app);
+  await registerCorePlugins(app, sessionSecret!);
   registerViewRenderer(app);
   registerStaticAssets(app);
-  registerSecurityHooks(app, repository);
-  registerRoutes(app, repository);
+  registerSecurityHooks(app, repository, options.adminEmail ?? process.env.ADMIN_EMAIL);
+  registerRoutes(app, repository, emailSender, appBaseUrl);
   registerErrorHandlers(app);
 
   app.addHook('onClose', async () => repository.close());
   return app;
 }
 
-async function registerCorePlugins(app: FastifyInstance): Promise<void> {
+async function registerCorePlugins(app: FastifyInstance, sessionSecret: string): Promise<void> {
   await app.register(cookie);
   await app.register(session, {
-    secret: process.env.SESSION_SECRET || 'local-development-secret-change-me',
+    secret: sessionSecret,
     cookie: {
       secure: process.env.NODE_ENV === 'production',
       httpOnly: true,
@@ -68,6 +76,7 @@ function registerViewRenderer(app: FastifyInstance): void {
   });
 
   app.decorateRequest('currentUser', null);
+  app.decorateRequest('isAdmin', false);
   app.decorateReply('view', function (
     this: FastifyReply,
     template: string,
@@ -82,7 +91,11 @@ function registerViewRenderer(app: FastifyInstance): void {
       oauthEnabled: Boolean(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET),
     });
 
-    return this.code(status).type('text/html; charset=utf-8').send(html);
+    return this
+      .header('Cache-Control', 'no-store')
+      .code(status)
+      .type('text/html; charset=utf-8')
+      .send(html);
   });
 }
 
@@ -92,15 +105,31 @@ function registerStaticAssets(app: FastifyInstance): void {
   for (const [url, filename, contentType] of staticAssets) {
     app.get(url, async (_request, reply) => {
       const contents = await readFile(join(staticRoot, filename));
-      return reply.type(contentType).send(contents);
+      return reply
+        .header('Cache-Control', 'no-cache, must-revalidate')
+        .type(contentType)
+        .send(contents);
     });
   }
 }
 
-function registerSecurityHooks(app: FastifyInstance, repository: Repository): void {
+function registerSecurityHooks(
+  app: FastifyInstance,
+  repository: Repository,
+  adminEmail: string | undefined,
+): void {
+  const rateLimiter = new InMemoryRateLimiter();
+
+  app.addHook('onClose', async () => rateLimiter.close());
+
   app.addHook('preHandler', async request => {
     const userId = request.session.userId;
     request.currentUser = userId ? repository.findUserById(userId) ?? null : null;
+    request.isAdmin = Boolean(
+      request.currentUser
+      && adminEmail
+      && request.currentUser.username.toLowerCase() === adminEmail.trim().toLowerCase(),
+    );
   });
 
   app.addHook('preHandler', async (request, reply) => {
@@ -115,16 +144,37 @@ function registerSecurityHooks(app: FastifyInstance, repository: Repository): vo
       ? body._method.toUpperCase()
       : request.method;
 
+    if (isAdminPath(request.url) && !request.isAdmin) {
+      return reply.view('error/403.njk', {}, 403);
+    }
+
     if (isProtectedPath(request.url) && !request.currentUser) {
       return reply.redirect('/login');
+    }
+
+    for (const policy of rateLimitPolicies(request)) {
+      const result = rateLimiter.consume(policy.key, policy.limit, policy.windowMs);
+      if (!result.allowed) {
+        return reply
+          .header('Retry-After', String(Math.ceil(result.retryAfterMs / 1_000)))
+          .code(429)
+          .type('text/plain; charset=utf-8')
+          .send('요청이 너무 많습니다. 잠시 후 다시 시도해 주세요.');
+      }
     }
   });
 }
 
-function registerRoutes(app: FastifyInstance, repository: Repository): void {
+function registerRoutes(
+  app: FastifyInstance,
+  repository: Repository,
+  emailSender: import('./types.js').EmailSender,
+  appBaseUrl: string,
+): void {
   registerPoemRoutes(app, repository);
+  registerAdminRoutes(app, repository);
   registerUserRoutes(app, repository);
-  registerAuthRoutes(app, repository);
+  registerAuthRoutes(app, repository, emailSender, appBaseUrl);
 }
 
 function registerErrorHandlers(app: FastifyInstance): void {
@@ -150,8 +200,126 @@ function isProtectedPath(url: string): boolean {
   return protectedPaths.some(pattern => pattern.test(path));
 }
 
-function ensureProductionConfiguration(): void {
-  if (process.env.NODE_ENV === 'production' && !process.env.SESSION_SECRET) {
-    throw new Error('SESSION_SECRET is required in production');
+function isAdminPath(url: string): boolean {
+  const path = url.split('?')[0] ?? url;
+  return /^\/admin(?:\/|$)/.test(path);
+}
+
+function ensureConfiguration(
+  sessionSecret: string | undefined,
+  appBaseUrl: string,
+  appBaseUrlProvidedByOptions: boolean,
+): void {
+  if (!sessionSecret) throw new Error('SESSION_SECRET is required');
+  if (sessionSecret.length < 32) throw new Error('SESSION_SECRET must be at least 32 characters');
+  if (new Set(sessionSecret).size < 12) {
+    throw new Error('SESSION_SECRET must contain at least 12 distinct characters');
+  }
+
+  let publicUrl: URL;
+  try {
+    publicUrl = new URL(appBaseUrl);
+  } catch {
+    throw new Error('APP_BASE_URL must be an absolute URL');
+  }
+  if (!['http:', 'https:'].includes(publicUrl.protocol)) {
+    throw new Error('APP_BASE_URL must use HTTP or HTTPS');
+  }
+  if (process.env.NODE_ENV === 'production') {
+    if (!process.env.APP_BASE_URL && !appBaseUrlProvidedByOptions) {
+      throw new Error('APP_BASE_URL is required in production');
+    }
+    if (publicUrl.protocol !== 'https:') throw new Error('APP_BASE_URL must use HTTPS in production');
+  }
+
+  const hasClientId = Boolean(process.env.GOOGLE_CLIENT_ID);
+  const hasClientSecret = Boolean(process.env.GOOGLE_CLIENT_SECRET);
+  if (hasClientId !== hasClientSecret) {
+    throw new Error('GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET must be configured together');
+  }
+  if (hasClientId && !process.env.GOOGLE_REDIRECT_URI) {
+    throw new Error('GOOGLE_REDIRECT_URI is required when Google OAuth is configured');
+  }
+  if (hasClientId) validateGoogleRedirectUri(process.env.GOOGLE_REDIRECT_URI!);
+}
+
+function validateGoogleRedirectUri(value: string): void {
+  let url: URL;
+  try {
+    url = new URL(value);
+  } catch {
+    throw new Error('GOOGLE_REDIRECT_URI must be an absolute URL');
+  }
+  if (process.env.NODE_ENV === 'production' && url.protocol !== 'https:') {
+    throw new Error('GOOGLE_REDIRECT_URI must use HTTPS in production');
+  }
+}
+
+function configuredTrustProxy(): false | string[] {
+  const proxies = process.env.TRUSTED_PROXIES?.split(',').map(value => value.trim()).filter(Boolean);
+  return proxies?.length ? proxies : false;
+}
+
+interface RateLimitPolicy {
+  key: string;
+  limit: number;
+  windowMs: number;
+}
+
+function rateLimitPolicies(request: import('fastify').FastifyRequest): RateLimitPolicy[] {
+  const path = request.url.split('?')[0] ?? request.url;
+  const ip = request.ip;
+  const actor = request.currentUser ? `user:${request.currentUser.id}` : `session:${request.session.sessionId}`;
+
+  if (request.method === 'POST' && path === '/login') {
+    const username = String(bodyOf(request).username ?? '').trim().toLowerCase().slice(0, 254);
+    return [
+      { key: `login-ip:${ip}`, limit: 30, windowMs: 15 * 60_000 },
+      { key: `login-account:${ip}:${username}`, limit: 10, windowMs: 15 * 60_000 },
+    ];
+  }
+  if (request.method === 'POST' && path === '/signup') {
+    return [{ key: `signup:${ip}`, limit: 5, windowMs: 60 * 60_000 }];
+  }
+  if (request.method === 'GET' && path === '/oauth2/authorization/google') {
+    return [{ key: `oauth:${ip}`, limit: 20, windowMs: 15 * 60_000 }];
+  }
+  if (request.method === 'POST' && path === '/poems') {
+    return [{ key: `poem:${actor}:${ip}`, limit: request.currentUser ? 30 : 10, windowMs: 60 * 60_000 }];
+  }
+  if (request.method === 'POST' && /^\/poems\/\d+\/(comments|ratings|saves)$/.test(path)) {
+    return [{ key: `interaction:${actor}`, limit: 60, windowMs: 15 * 60_000 }];
+  }
+  if (request.method === 'POST' && /^\/poems\/\d+\/reports$/.test(path)) {
+    return [{ key: `report:${actor}`, limit: 10, windowMs: 60 * 60_000 }];
+  }
+  return [];
+}
+
+class InMemoryRateLimiter {
+  private readonly entries = new Map<string, { count: number; resetAt: number }>();
+  private readonly cleanupTimer = setInterval(() => this.cleanup(), 60_000).unref();
+
+  consume(key: string, limit: number, windowMs: number): { allowed: boolean; retryAfterMs: number } {
+    const now = Date.now();
+    let entry = this.entries.get(key);
+    if (!entry || entry.resetAt <= now) {
+      entry = { count: 0, resetAt: now + windowMs };
+      this.entries.set(key, entry);
+    }
+    entry.count += 1;
+    return { allowed: entry.count <= limit, retryAfterMs: Math.max(0, entry.resetAt - now) };
+  }
+
+  close(): void {
+    clearInterval(this.cleanupTimer);
+    this.entries.clear();
+  }
+
+  private cleanup(): void {
+    const now = Date.now();
+    for (const [key, entry] of this.entries) {
+      if (entry.resetAt <= now) this.entries.delete(key);
+    }
   }
 }

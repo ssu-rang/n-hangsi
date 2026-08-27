@@ -1,1 +1,33 @@
-<!doctype html><html lang="ko"><head>{% set title='회원가입' %}{% include '_head.njk' %}</head><body class="interior-page auth-page"><main class="container py-5" style="max-width:520px"><section class="card shadow-sm"><div class="card-body p-4 p-lg-5"><h1 class="h3 fw-black mb-4">회원가입</h1><form method="post" action="/signup"><input type="hidden" name="_csrf" value="{{ csrfToken }}">{% for field,label,type in [['email','이메일','email'],['nickname','닉네임','text'],['password','비밀번호','password'],['passwordConfirm','비밀번호 확인','password']] %}<div class="{% if not loop.last %}mb-3{% else %}mb-4{% endif %}"><label class="form-label" for="{{ field }}">{{ label }}</label><input class="form-control" id="{{ field }}" name="{{ field }}" type="{{ type }}" value="{% if type != 'password' %}{{ form[field] or '' }}{% endif %}" required>{% if errors[field] %}<div class="text-danger small">{{ errors[field] }}</div>{% endif %}</div>{% endfor %}<button class="btn btn-primary w-100">가입하기</button></form></div></section></main>{% include '_footer.njk' %}</body></html>
+<!doctype html>
+<html lang="ko">
+<head>{% set title='회원가입' %}{% include '_head.njk' %}</head>
+<body class="interior-page auth-page">
+<main class="auth-shell">
+    <section class="auth-intro">
+        <a class="navbar-brand" href="/" aria-label="N행시 홈">
+            <span class="brand-logo-crop"><img class="brand-logo" src="/images/nhangsi-logo.png" alt=""></span>
+        </a>
+        <h1>N행시 시작하기</h1>
+    </section>
+    <section class="auth-card">
+        <h2>회원가입</h2>
+        {% if verificationError %}<div class="alert alert-danger">인증 링크가 잘못되었거나 만료되었습니다. 다시 가입해 주세요.</div>{% endif %}
+        {% include 'auth/_google_button.njk' %}
+        <form method="post" action="/signup">
+            <input type="hidden" name="_csrf" value="{{ csrfToken }}">
+            {% for field,label,type in [['email','이메일','email'],['nickname','닉네임','text'],['password','비밀번호','password'],['passwordConfirm','비밀번호 확인','password']] %}
+            <div class="{% if not loop.last %}mb-3{% else %}mb-4{% endif %}">
+                <label class="form-label" for="{{ field }}">{{ label }}</label>
+                <input class="form-control" id="{{ field }}" name="{{ field }}" type="{{ type }}"
+                       value="{% if type != 'password' %}{{ form[field] or '' }}{% endif %}" required>
+                {% if errors[field] %}<div class="text-danger small">{{ errors[field] }}</div>{% endif %}
+            </div>
+            {% endfor %}
+            <button class="btn btn-primary w-100">인증 메일 받기</button>
+        </form>
+        <p class="auth-switch">이미 계정이 있나요? <a href="/login">로그인</a></p>
+    </section>
+</main>
+{% include '_footer.njk' %}
+</body>
+</html>
