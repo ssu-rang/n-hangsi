@@ -2,6 +2,7 @@ node_modules/
 .next/
 .vinext/
 dist/
+.test-dist/
 .wrangler/
 coverage/
 out/
@@ -17,13 +18,11 @@ yarn-error.log*
 .pnpm-debug.log*
 *.iml
 .idea/
-data/
+data/*
+!data/.gitkeep
 .gradle/
 .kotlin/
 build/
-!gradle/wrapper/gradle-wrapper.jar
-!**/src/main/**/build/
-!**/src/test/**/build/
 
 ### Eclipse / STS ###
 .apt_generated/
@@ -46,6 +45,5 @@ bin/
 /nbbuild/
 /nbdist/
 /.nb-gradle/
-
 ### VS Code ###
 .vscode/
