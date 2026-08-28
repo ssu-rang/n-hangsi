@@ -191,6 +191,16 @@ footer {
     background: var(--secondary)
 }
 
+header .navbar {
+    flex-wrap: nowrap
+}
+
+#mainNav {
+    display: block;
+    flex-basis: auto;
+    min-width: 0
+}
+
 .brand-mark {
     display: grid;
     place-items: center;
@@ -321,6 +331,11 @@ footer {
 
 .main-content {
     min-width: 0
+}
+
+.mobile-home-category,
+.mobile-between-ad {
+    display: none
 }
 
 .category-sidebar {
@@ -1341,18 +1356,23 @@ label {
 .sidebar-ad,
 .hero-ad,
 .feed-ad,
-.combined-write-ad {
-    position: relative
+.combined-write-ad,
+.mobile-between-ad {
+    position: relative;
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr);
+    align-items: stretch;
+    padding: 0
 }
 
 .sidebar-ad .ad-mark,
 .hero-ad .ad-mark,
 .feed-ad .ad-mark,
-.combined-write-ad .ad-mark {
-    position: absolute;
-    top: 12px;
-    left: 12px;
-    margin: 0;
+.combined-write-ad .ad-mark,
+.mobile-between-ad .ad-mark {
+    position: static;
+    justify-self: start;
+    margin: 12px 12px 0;
     padding: 2px 5px;
     background: var(--primary);
     color: var(--surface);
@@ -1360,6 +1380,28 @@ label {
     font-weight: 700;
     letter-spacing: .06em;
     line-height: 1.4
+}
+
+.ad-slot-content {
+    min-width: 0;
+    min-height: 0
+}
+
+.hero-ad .ad-slot-content {
+    display: flex;
+    align-items: center;
+    padding: 10px 24px 22px
+}
+
+.ad-slot-content > .adsbygoogle,
+.ad-slot-content > iframe {
+    display: block;
+    width: 100%;
+    border: 0
+}
+
+.mobile-between-ad {
+    display: none
 }
 
 .explore-ranking-list {
@@ -2088,8 +2130,8 @@ label {
     }
 
     .sidebar-ad-stack .sidebar-ad {
-        width: min(180px, 100%);
-        aspect-ratio: 1 / 3;
+        width: 100%;
+        aspect-ratio: 3 / 1;
         justify-self: center
     }
 
@@ -2107,27 +2149,30 @@ label {
 }
 
 @media (max-width: 700px) {
-    #menu {
-        display: block
+    #mainNav {
+        overflow-x: auto;
+        scrollbar-width: none
     }
 
-    #nav {
-        display: none;
-        position: absolute;
-        top: 64px;
-        left: 0;
-        right: 0;
-        background: var(--surface);
-        padding: 20px;
-        flex-direction: column
+    #mainNav::-webkit-scrollbar {
+        display: none
     }
 
-    #nav.open {
-        display: flex
+    #mainNav .navbar-nav {
+        align-items: center;
+        flex-wrap: nowrap;
+        justify-content: flex-end;
+        white-space: nowrap
     }
 
-    #auth {
-        flex-direction: column
+    #mainNav .nav-link {
+        padding-right: .45rem;
+        padding-left: .45rem;
+        font-size: .9rem
+    }
+
+    .brand-logo-crop {
+        width: 56px
     }
 
     .daily-overview {
@@ -2166,6 +2211,51 @@ label {
         flex-basis: 150px
     }
 
+    .sidebar-ad-stack {
+        display: none
+    }
+
+    .category-sidebar {
+        display: none
+    }
+
+    .mobile-between-ad {
+        display: grid;
+        width: 100%;
+        aspect-ratio: 3 / 1;
+        margin: 24px 0;
+        background: var(--surface);
+        border: 3px solid var(--line);
+        border-top-color: var(--secondary);
+        border-bottom-color: var(--primary)
+    }
+
+    .mobile-home-category {
+        display: block;
+        margin: 0 0 24px;
+        padding-top: 14px;
+        border-top: 1px solid var(--line)
+    }
+
+    .mobile-home-category .filter-group {
+        padding-top: 0;
+        border-top: 0
+    }
+
+    .mobile-home-category .filter-group nav {
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+        gap: 8px;
+        text-align: center
+    }
+
+    .mobile-home-category .filter-group nav > :first-child {
+        grid-column: auto
+    }
+
+    .mobile-home-category .filter-group .is-active {
+        width: auto
+    }
+
     .trending-grid {
         grid-template-columns: 1fr;
         grid-template-rows: none;
@@ -2179,26 +2269,41 @@ label {
         min-height: 190px
     }
 
+    .trending-rank-1 { grid-row: 1 }
+    .trending-rank-2 { grid-row: 2 }
+    .trending-rank-3 { grid-row: 3 }
+    .trending-rank-4 { grid-row: 4 }
+    .trending-rank-5 { grid-row: 5 }
+
     .trending-grid .card-body {
         grid-template-columns: 48px minmax(0, 1fr);
         gap: 10px
     }
 
     .feed-ad {
-        display: grid;
         grid-column: 1;
         grid-row: auto;
-        grid-template-columns: auto minmax(0, 1fr) auto;
-        align-items: center;
-        gap: 14px;
+        grid-template-columns: 1fr;
+        grid-template-rows: auto minmax(0, 1fr);
+        align-items: stretch;
+        gap: 0;
         margin-top: 18px;
-        padding: 18px
+        padding: 0
     }
 
     .feed-ad-rank-1-2,
     .feed-ad-rank-3-4,
     .feed-ad-rank-5 {
         aspect-ratio: 3 / 1
+    }
+
+    .feed-ad-rank-1-2,
+    .feed-ad-rank-3-4 {
+        display: none
+    }
+
+    .feed-ad-rank-5 {
+        grid-row: 6
     }
 
     .feed-ad strong,
@@ -2211,6 +2316,16 @@ label {
     }
 
     .feed-ad strong br {
+        display: none
+    }
+
+    .combined-write-ad,
+    .combined-write-ad-landscape {
+        max-width: none;
+        aspect-ratio: 3 / 1
+    }
+
+    .combined-write-ad:not(:last-child) {
         display: none
     }
 

@@ -1,7 +1,6 @@
 <header class="sticky-top border-bottom bg-body-tertiary"><nav class="navbar navbar-expand-lg container py-2">
   <a class="navbar-brand fw-black" href="/" aria-label="N행시 홈"><span class="brand-logo-crop" aria-hidden="true"><img class="brand-logo" src="/images/nhangsi-logo.png" alt=""></span></a>
-  <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNav" aria-controls="mainNav" aria-expanded="false" aria-label="메뉴 열기"><span class="navbar-toggler-icon"></span></button>
-  <div id="mainNav" class="collapse navbar-collapse"><ul class="navbar-nav ms-auto gap-lg-2">
+  <div id="mainNav" class="navbar-collapse"><ul class="navbar-nav ms-auto flex-row gap-lg-2">
     <li class="nav-item"><a class="nav-link" href="/">홈</a></li><li class="nav-item"><a class="nav-link" href="/poems">마당</a></li>
     {% if currentUser %}<li class="nav-item"><a class="nav-link" href="/profile">프로필</a></li><li class="nav-item"><a class="nav-link" href="/profile/saves">저장 목록</a></li><li class="nav-item"><form method="post" action="/logout"><input type="hidden" name="_csrf" value="{{ csrfToken }}"><button class="nav-link nav-login border-0 bg-transparent" type="submit">로그아웃</button></form></li>
     {% else %}<li class="nav-item"><a class="nav-link nav-login" href="/login">로그인</a></li>{% endif %}

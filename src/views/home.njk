@@ -21,9 +21,9 @@
                 </nav>
             </div>
             <div class="sidebar-ad-stack" aria-label="카테고리 광고">
-                <aside class="sidebar-ad"><span class="ad-mark">ADVERTISEMENT</span></aside>
-                <aside class="sidebar-ad"><span class="ad-mark">ADVERTISEMENT</span></aside>
-                <aside class="sidebar-ad"><span class="ad-mark">ADVERTISEMENT</span></aside>
+                <aside class="sidebar-ad" data-ad-provider="network" data-ad-slot="home-sidebar-1" data-ad-format="vertical" data-ad-mobile-format="horizontal"><span class="ad-mark">ADVERTISEMENT</span><div class="ad-slot-content"></div></aside>
+                <aside class="sidebar-ad" data-ad-provider="network" data-ad-slot="home-sidebar-2" data-ad-format="vertical" data-ad-mobile-format="horizontal"><span class="ad-mark">ADVERTISEMENT</span><div class="ad-slot-content"></div></aside>
+                <aside class="sidebar-ad" data-ad-provider="network" data-ad-slot="home-sidebar-3" data-ad-format="vertical" data-ad-mobile-format="horizontal"><span class="ad-mark">ADVERTISEMENT</span><div class="ad-slot-content"></div></aside>
             </div>
         </aside>
         <div class="main-content">
@@ -37,9 +37,9 @@
                                href="/poems/new?word={{ promptWord | urlencode }}">N행시 쓰기</a>
                         </div>
                     </div>
-                    <aside class="hero-ad" aria-label="오늘의 단어 광고">
+                    <aside class="hero-ad" aria-label="오늘의 단어 광고" data-ad-provider="direct" data-ad-slot="home-hero" data-ad-format="horizontal" data-ad-mobile-format="horizontal">
                         <span class="ad-mark">ADVERTISEMENT</span>
-                        <strong><em class="hero-ad-initial">광</em>고 자리 비어있습니다<br><em class="hero-ad-initial">고</em>민 말고 들어오세요</strong>
+                        <div class="ad-slot-content"><strong><em class="hero-ad-initial">광</em>고 자리 비어있습니다<br><em class="hero-ad-initial">고</em>민 말고 들어오세요</strong></div>
                     </aside>
                 </div>
                 <div class="daily-recommendation">
@@ -63,6 +63,22 @@
                     <a class="prompt-work-link" href="/poems?keyword={{ promptWord | urlencode }}">
                         {{ promptWord }} 작품 더 보기 →
                     </a>
+                </div>
+            </section>
+            <aside class="mobile-between-ad" aria-label="광고 영역" data-ad-provider="network" data-ad-slot="home-mobile-between" data-ad-format="horizontal" data-ad-mobile-format="horizontal">
+                <span class="ad-mark">ADVERTISEMENT</span>
+                <div class="ad-slot-content"></div>
+            </aside>
+            <section class="mobile-home-category" aria-label="N행시 카테고리">
+                <div class="filter-group">
+                    <h3>글자 수</h3>
+                    <nav>
+                        {% for value,label in [['all','전체'],['2','2행시'],['3','3행시'],['4','4행시'],['5','5글자']] %}
+                        <a href="/{% if value != 'all' %}?lines={{ value }}{% endif %}"
+                           class="{% if lineFilter == value %}is-active{% endif %}"
+                           {% if lineFilter == value %}aria-current="page"{% endif %}>{{ label }}</a>
+                        {% endfor %}
+                    </nav>
                 </div>
             </section>
             <div class="d-flex justify-content-between align-items-end mb-3 home-section-head">
@@ -100,14 +116,17 @@
                     </article>
                 </div>
                 {% endfor %}
-                <aside class="feed-ad feed-ad-rank-1-2">
+                <aside class="feed-ad feed-ad-rank-1-2" data-ad-provider="network" data-ad-slot="home-feed-1" data-ad-format="vertical" data-ad-mobile-format="horizontal">
                     <span class="ad-mark">ADVERTISEMENT</span>
+                    <div class="ad-slot-content"></div>
                 </aside>
-                <aside class="feed-ad feed-ad-rank-3-4">
+                <aside class="feed-ad feed-ad-rank-3-4" data-ad-provider="network" data-ad-slot="home-feed-2" data-ad-format="vertical" data-ad-mobile-format="horizontal">
                     <span class="ad-mark">ADVERTISEMENT</span>
+                    <div class="ad-slot-content"></div>
                 </aside>
-                <aside class="feed-ad feed-ad-rank-5">
+                <aside class="feed-ad feed-ad-rank-5" data-ad-provider="network" data-ad-slot="home-feed-3" data-ad-format="rectangle" data-ad-mobile-format="horizontal">
                     <span class="ad-mark">ADVERTISEMENT</span>
+                    <div class="ad-slot-content"></div>
                 </aside>
             </div>
         </div>
