@@ -2102,9 +2102,9 @@ label {
 }
 
 .report-section {
-    max-width: none;
-    margin: 24px auto 0;
-    padding: 0 38px
+    width: 34px;
+    margin: 0 0 0 auto;
+    padding: 0
 }
 
 .report-section .alert {
@@ -2128,25 +2128,29 @@ label {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 44px;
-    height: 44px;
-    padding: 8px;
-    border: 1px solid var(--line);
+    width: 34px;
+    height: 34px;
+    padding: 5px;
+    border: 0;
     border-radius: 4px;
-    background: #fff;
-    color: var(--primary);
+    background: transparent;
+    color: var(--muted);
     cursor: pointer
 }
 
 .report-icon-button:hover,
 .report-icon-button:focus-visible {
-    border-color: var(--primary);
-    background: color-mix(in srgb, var(--primary) 8%, white)
+    color: var(--primary)
+}
+
+.report-icon-button:focus-visible {
+    outline: 2px solid var(--secondary);
+    outline-offset: 2px
 }
 
 .report-icon-button svg {
-    width: 25px;
-    height: 25px;
+    width: 100%;
+    height: 100%;
     fill: none;
     stroke: currentColor;
     stroke-width: 1.8;
@@ -2166,12 +2170,20 @@ label {
 }
 
 .report-disclosure {
+    position: relative;
     text-align: right
 }
 
 .report-disclosure form {
+    position: absolute;
+    z-index: 2;
+    top: 100%;
+    right: 0;
+    width: min(520px, 75vw);
     margin-top: 18px;
-    padding: 18px 0 26px;
+    padding: 18px;
+    border: 1px solid var(--line);
+    background: #fff;
     text-align: left
 }
 
@@ -2800,11 +2812,6 @@ label {
     .interior-page .write-card,
     .interior-page form.write-card,
     .interior-page .auth-card {
-        padding-right: 20px;
-        padding-left: 20px
-    }
-
-    .report-section {
         padding-right: 20px;
         padding-left: 20px
     }

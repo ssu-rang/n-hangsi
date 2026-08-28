@@ -37,6 +37,9 @@
             {% endif %}
         </div>
         {% if currentUser %}
+        {% if reportSubmitted %}<div class="alert alert-success mt-3">신고가 접수되었습니다.</div>{% endif %}
+        {% if reportDuplicate %}<div class="alert alert-warning mt-3">이미 신고한 작품입니다.</div>{% endif %}
+        {% if reportError %}<div class="alert alert-danger mt-3">{{ reportError }}</div>{% endif %}
         <div class="detail-actions">
             <form class="rating-form" method="post" action="/poems/{{ poem.id }}/ratings">
                 <input type="hidden" name="_csrf" value="{{ csrfToken }}">
@@ -46,30 +49,25 @@
                 </select>
                 <button class="btn btn-sm btn-primary">평가</button>
             </form>
+            <section class="report-section" aria-label="작품 신고">
+                <details class="report-disclosure"{% if reportError %} open{% endif %}>
+                    <summary class="report-icon-button" aria-label="작품 신고" title="작품 신고">
+                        <svg viewBox="0 0 24 24" aria-hidden="true">
+                            <path d="M7 14v-3a5 5 0 0 1 10 0v3M6 15h12v3H6zM4 20h16M12 2v2M4.5 5.5 6 7m13.5-1.5L18 7M2 12h2m16 0h2"/>
+                        </svg>
+                    </summary>
+                    <form method="post" action="/poems/{{ poem.id }}/reports">
+                        <input type="hidden" name="_csrf" value="{{ csrfToken }}">
+                        <label class="form-label" for="report-reason">신고 내용</label>
+                        <textarea id="report-reason" name="reason" class="form-control" minlength="3" maxlength="500" required
+                                  placeholder="신고 사유를 구체적으로 적어주세요."></textarea>
+                        <button class="btn btn-primary mt-2" type="submit">신고 접수</button>
+                    </form>
+                </details>
+            </section>
         </div>
         {% endif %}
         </article>
-        {% if currentUser %}
-        <section class="report-section" aria-label="작품 신고">
-        {% if reportSubmitted %}<div class="alert alert-success">신고가 접수되었습니다.</div>{% endif %}
-        {% if reportDuplicate %}<div class="alert alert-warning">이미 신고한 작품입니다.</div>{% endif %}
-        {% if reportError %}<div class="alert alert-danger">{{ reportError }}</div>{% endif %}
-        <details class="report-disclosure"{% if reportError %} open{% endif %}>
-            <summary class="report-icon-button" aria-label="작품 신고" title="작품 신고">
-                <svg viewBox="0 0 24 24" aria-hidden="true">
-                    <path d="M9 3h6l1.5 8h-9L9 3Zm-3 9h12v5H6v-5Zm-2 6h16v3H4v-3ZM3 7h3M18 7h3M5 2l2 2m12-2-2 2"/>
-                </svg>
-            </summary>
-            <form method="post" action="/poems/{{ poem.id }}/reports">
-                <input type="hidden" name="_csrf" value="{{ csrfToken }}">
-                <label class="form-label" for="report-reason">신고 내용</label>
-                <textarea id="report-reason" name="reason" class="form-control" minlength="3" maxlength="500" required
-                          placeholder="신고 사유를 구체적으로 적어주세요."></textarea>
-                <button class="btn btn-primary mt-2" type="submit">신고 접수</button>
-            </form>
-        </details>
-        </section>
-        {% endif %}
     </div>
     <section class="comments">
         <div class="section-head"><h2>댓글 {{ poem.commentCount }}</h2></div>
@@ -109,7 +107,7 @@
                     <details class="comment-report"{% if commentReportId == comment.id and commentReportError %} open{% endif %}>
                         <summary class="report-icon-button report-icon-button-small" aria-label="댓글 신고" title="댓글 신고">
                             <svg viewBox="0 0 24 24" aria-hidden="true">
-                                <path d="M9 3h6l1.5 8h-9L9 3Zm-3 9h12v5H6v-5Zm-2 6h16v3H4v-3ZM3 7h3M18 7h3M5 2l2 2m12-2-2 2"/>
+                                <path d="M7 14v-3a5 5 0 0 1 10 0v3M6 15h12v3H6zM4 20h16M12 2v2M4.5 5.5 6 7m13.5-1.5L18 7M2 12h2m16 0h2"/>
                             </svg>
                         </summary>
                         <form method="post" action="/poems/{{ poem.id }}/comments/{{ comment.id }}/reports">
