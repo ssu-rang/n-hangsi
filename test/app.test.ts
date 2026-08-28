@@ -212,6 +212,55 @@ test('Google login, nickname, comment, rating, save and unsave flow', async t =>
   assert.equal(savesPage.statusCode, 200); assert.match(savesPage.body, /사과/);
   response = await c.request({ method: 'POST', url: `${poemUrl}/saves`, headers, payload: form({ _csrf: authenticatedCsrf, _method: 'delete' }) }); assert.equal(response.statusCode, 302);
   assert.doesNotMatch((await c.request({ method: 'GET', url: poemUrl })).body, /저장 취소/);
+
+  response = await c.request({ method: 'POST', url: '/logout', headers, payload: form({ _csrf: authenticatedCsrf }) });
+  assert.equal(response.headers.location, '/');
+  nextGoogleProfile = {
+    sub: 'google-member@example.com',
+    email: 'member@example.com',
+    email_verified: true,
+    name: 'Google 기본 이름',
+  };
+  response = await c.request({ method: 'GET', url: '/oauth2/authorization/google' });
+  const state = new URL(response.headers.location!).searchParams.get('state');
+  assert.ok(state);
+  response = await c.request({
+    method: 'GET',
+    url: `/login/oauth2/code/google?code=test-code&state=${encodeURIComponent(state)}`,
+  });
+  assert.equal(response.headers.location, '/');
+  assert.match((await c.request({ method: 'GET', url: '/profile' })).headers.location ?? '', /^\/users\/\d+$/);
+});
+
+test('Google login links a legacy account without asking for a nickname again', async t => {
+  const db = createDatabase(':memory:');
+  createUser(db, { username: 'legacy@example.com', nickname: '기존닉네임' });
+  const app = await buildApp({
+    db,
+    sessionSecret: testSessionSecret,
+    appBaseUrl: 'http://localhost:8080',
+  });
+  t.after(() => app.close());
+  const c = await client(app);
+  nextGoogleProfile = {
+    sub: 'google-legacy-user',
+    email: 'legacy@example.com',
+    email_verified: true,
+    name: '바뀐 Google 이름',
+  };
+
+  let response = await c.request({ method: 'GET', url: '/oauth2/authorization/google' });
+  const state = new URL(response.headers.location!).searchParams.get('state');
+  assert.ok(state);
+  response = await c.request({
+    method: 'GET',
+    url: `/login/oauth2/code/google?code=test-code&state=${encodeURIComponent(state)}`,
+  });
+  assert.equal(response.headers.location, '/');
+  const profileRedirect = await c.request({ method: 'GET', url: '/profile' });
+  const profile = await c.request({ method: 'GET', url: profileRedirect.headers.location! });
+  assert.match(profile.body, /기존닉네임/);
+  assert.doesNotMatch(profile.body, /바뀐 Google 이름/);
 });
 
 test('account deletion removes member activity and anonymizes authored poems', async t => {

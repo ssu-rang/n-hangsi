@@ -2,7 +2,7 @@ import { randomBytes } from 'node:crypto';
 import type { FastifyInstance } from 'fastify';
 import type { DatabaseSync } from 'node:sqlite';
 import { bodyOf, queryOf } from '../shared/request.js';
-import { createUser, findProviderUser } from '../db/users.js';
+import { createUser, findOrLinkGoogleUser } from '../db/users.js';
 
 interface GoogleToken {
   access_token: string;
@@ -49,7 +49,7 @@ export function registerAuthRoutes(app: FastifyInstance, db: DatabaseSync): void
       }, 400);
     }
 
-    const existingUser = findProviderUser(db, 'google', profile.sub);
+    const existingUser = findOrLinkGoogleUser(db, profile.sub, profile.email);
     const user = existingUser ?? createUser(db, {
       username: profile.email,
       nickname,
@@ -99,7 +99,7 @@ export function registerAuthRoutes(app: FastifyInstance, db: DatabaseSync): void
         throw new Error('Google email is missing or unverified');
       }
 
-      const user = findProviderUser(db, 'google', profile.sub);
+      const user = findOrLinkGoogleUser(db, profile.sub, profile.email);
       if (user) {
         await request.session.regenerate();
         request.session.userId = user.id;

@@ -27,6 +27,31 @@ export function findProviderUser(
     .get(provider, providerUserId) as unknown as User | undefined;
 }
 
+export function findOrLinkGoogleUser(
+  db: DatabaseSync,
+  providerUserId: string,
+  email: string,
+): User | undefined {
+  const user = findProviderUser(db, 'google', providerUserId);
+  if (user) return user;
+
+  const legacyUser = db.prepare(`
+    SELECT * FROM users
+    WHERE lower(username) = ?
+      AND password IS NULL
+      AND (provider_user_id IS NULL OR trim(provider_user_id) = '')
+    LIMIT 1
+  `).get(email.trim().toLowerCase()) as unknown as User | undefined;
+  if (!legacyUser) return undefined;
+
+  db.prepare(`
+    UPDATE users
+    SET provider = 'google', provider_user_id = ?
+    WHERE id = ?
+  `).run(providerUserId, legacyUser.id);
+  return findUserById(db, legacyUser.id);
+}
+
 export function createUser(db: DatabaseSync, input: NewUser): User {
   const { username, nickname, provider = 'local', providerUserId = null } = input;
   const result = db.prepare(`
