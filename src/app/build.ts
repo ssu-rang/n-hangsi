@@ -146,10 +146,6 @@ function registerStaticAssets(app: FastifyInstance): void {
     .type('text/javascript; charset=utf-8')
     .send(await readFile(join(process.cwd(), 'node_modules/posthog-js/dist/array.js'))));
 
-  app.get('/ADVERTISING.md', async (_request, reply) => reply
-    .header('Cache-Control', 'no-cache, must-revalidate')
-    .type('text/markdown; charset=utf-8')
-    .send(await readFile(join(process.cwd(), 'ADVERTISING.md'))));
 }
 
 function registerSecurityHooks(

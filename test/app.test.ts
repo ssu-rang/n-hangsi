@@ -144,17 +144,13 @@ test('public pages, poem validation and anonymous creation', async t => {
   assert.equal(emptyHome.body.match(/class="home-sponsor-feed home-sponsor-feed-rank-/g)?.length, 3);
   assert.equal(emptyHome.body.match(/class="home-house-banner"/g)?.length, 1);
   assert.doesNotMatch(emptyHome.body, /home-house-banner"[^>]*data-ad-/);
-  assert.match(emptyHome.body, /class="house-banner-content" href="\/ADVERTISING\.md"/);
+  assert.match(emptyHome.body, /class="house-banner-content" href="https:\/\/github\.com\/ssu-rang\/n-hangsi\/blob\/main\/ADVERTISING\.md"/);
   assert.equal(emptyHome.body.match(/popular-slot-empty/g)?.length, 5);
   assert.equal(emptyHome.headers['cache-control'], 'no-store');
   const privacyPage = await c.request({ method: 'GET', url: '/privacy' });
   assert.equal(privacyPage.statusCode, 200);
   assert.match(privacyPage.body, /<h1>개인정보처리방침<\/h1>/);
   assert.match(privacyPage.body, /ssurang\.contact@gmail\.com/);
-  const advertisingPage = await c.request({ method: 'GET', url: '/ADVERTISING.md' });
-  assert.equal(advertisingPage.statusCode, 200);
-  assert.equal(advertisingPage.headers['content-type'], 'text/markdown; charset=utf-8');
-  assert.equal(advertisingPage.body, '');
   const writePage = await c.request({ method: 'GET', url: '/poems/new' });
   assert.match(writePage.body, /maxlength="5"/);
   let response = await c.request({ method: 'POST', url: '/poems', headers, payload: form({ _csrf: c.csrf, word: '가나다라마바' }) });
