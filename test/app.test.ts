@@ -204,6 +204,10 @@ test('public pages, poem validation and anonymous creation', async t => {
   const c = await client(app);
   const initialExplorePage = await c.request({ method: 'GET', url: '/poems' });
   assert.equal(initialExplorePage.statusCode, 200);
+  assert.match(initialExplorePage.body, /<meta name="description"/);
+  assert.match(initialExplorePage.body, /<meta name="robots" content="index, follow">/);
+  assert.match(initialExplorePage.body, /<link rel="canonical" href="http:\/\/localhost:8080\/poems">/);
+  assert.match(initialExplorePage.body, /<meta property="og:title" content="N행시 마당 \| N행시">/);
   assert.match(initialExplorePage.body, /aria-current="page"[^>]*>1<\/a>/);
   const emptyHome = await c.request({ method: 'GET', url: '/' });
   assert.match(emptyHome.body, /href="\/privacy">개인정보처리방침<\/a>/);
@@ -218,6 +222,18 @@ test('public pages, poem validation and anonymous creation', async t => {
   const privacyPage = await c.request({ method: 'GET', url: '/privacy' });
   assert.equal(privacyPage.statusCode, 200);
   assert.match(privacyPage.body, /<h1>개인정보처리방침<\/h1>/);
+
+  const loginPage = await c.request({ method: 'GET', url: '/login' });
+  assert.match(loginPage.body, /<meta name="robots" content="noindex, nofollow">/);
+
+  const robots = await c.request({ method: 'GET', url: '/robots.txt' });
+  assert.equal(robots.statusCode, 200);
+  assert.match(robots.body, /Sitemap: http:\/\/localhost:8080\/sitemap.xml/);
+
+  const sitemap = await c.request({ method: 'GET', url: '/sitemap.xml' });
+  assert.equal(sitemap.statusCode, 200);
+  assert.match(sitemap.headers['content-type'] ?? '', /application\/xml/);
+  assert.match(sitemap.body, /<loc>http:\/\/localhost:8080\/poems<\/loc>/);
   assert.match(privacyPage.body, /ssurang\.contact@gmail\.com/);
   const advertisingPage = await c.request({ method: 'GET', url: '/advertising' });
   assert.equal(advertisingPage.statusCode, 200);

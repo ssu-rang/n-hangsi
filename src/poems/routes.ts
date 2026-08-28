@@ -75,6 +75,10 @@ export function registerPoemRoutes(app: FastifyInstance, db: DatabaseSync): void
 
     return reply.view('poems/detail.njk', {
       poem,
+      seo: {
+        description: `${poem.word}로 만든 ${poem.authorName}님의 N행시 작품입니다.`,
+        type: 'article',
+      },
       comments: listComments(db, poem.id).map(toCommentView),
       commentError: null,
       reportError: null,

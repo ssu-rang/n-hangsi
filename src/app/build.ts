@@ -14,6 +14,7 @@ import { registerAuthRoutes } from '../auth/routes.js';
 import { registerReportRoutes } from '../reports/routes.js';
 import { registerPoemRoutes } from '../poems/routes.js';
 import { registerUserRoutes } from '../users/routes.js';
+import { listPoems } from '../db/poems.js';
 
 export interface AppOptions {
   logger?: boolean;
@@ -66,10 +67,10 @@ export async function buildApp(options: AppOptions = {}): Promise<FastifyInstanc
   }
 
   await registerCorePlugins(app, sessionSecret!);
-  registerViewRenderer(app, posthogKey, posthogHost);
+  registerViewRenderer(app, appBaseUrl, posthogKey, posthogHost);
   registerStaticAssets(app);
   registerSecurityHooks(app, database, options.adminEmail ?? process.env.ADMIN_EMAIL);
-  registerRoutes(app, database);
+  registerRoutes(app, database, appBaseUrl);
   registerErrorHandlers(app);
 
   app.addHook('onClose', async () => database.close());
@@ -95,6 +96,7 @@ async function registerCorePlugins(app: FastifyInstance, sessionSecret: string):
 
 function registerViewRenderer(
   app: FastifyInstance,
+  appBaseUrl: string,
   posthogKey: string | undefined,
   posthogHost: string,
 ): void {
@@ -112,8 +114,23 @@ function registerViewRenderer(
     status = 200,
   ) {
     const csrfToken = this.request.session.csrfToken ||= randomBytes(24).toString('hex');
+    const requestUrl = new URL(this.request.url, appBaseUrl);
+    requestUrl.searchParams.delete('accountDeleted');
+    requestUrl.searchParams.delete('report');
+    requestUrl.searchParams.delete('commentReport');
+    requestUrl.searchParams.delete('commentId');
+    const noindex = status >= 400 || isNoindexPath(requestUrl.pathname);
+    const seo = {
+      description: '재치 있는 N행시를 쓰고 감상하며 함께 즐기는 N행시 커뮤니티입니다.',
+      canonicalUrl: requestUrl.toString(),
+      imageUrl: new URL('/images/nhangsi-logo.v1.png', appBaseUrl).toString(),
+      robots: noindex ? 'noindex, nofollow' : 'index, follow',
+      type: 'website',
+      ...(data.seo && typeof data.seo === 'object' ? data.seo : {}),
+    };
     const html = views.render(template, {
       ...data,
+      seo,
       currentUser: this.request.currentUser,
       csrfToken,
       oauthEnabled: Boolean(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET),
@@ -213,13 +230,43 @@ function registerSecurityHooks(
 function registerRoutes(
   app: FastifyInstance,
   database: import('node:sqlite').DatabaseSync,
+  appBaseUrl: string,
 ): void {
   app.get('/privacy', async (_request, reply) => reply.view('privacy.njk'));
   app.get('/advertising', async (_request, reply) => reply.view('advertising.njk'));
+  app.get('/robots.txt', async (_request, reply) => reply
+    .type('text/plain; charset=utf-8')
+    .send([
+      'User-agent: *',
+      'Allow: /',
+      'Disallow: /admin/',
+      'Disallow: /profile',
+      'Disallow: /login',
+      'Disallow: /signup/',
+      `Sitemap: ${new URL('/sitemap.xml', appBaseUrl)}`,
+      '',
+    ].join('\n')));
+  app.get('/sitemap.xml', async (_request, reply) => {
+    const paths = ['/', '/poems', '/privacy', '/advertising', ...listPoems(database).map(poem => `/poems/${poem.id}`)];
+    const urls = paths.map(path => `  <url><loc>${escapeXml(new URL(path, appBaseUrl).toString())}</loc></url>`);
+    return reply
+      .type('application/xml; charset=utf-8')
+      .send(['<?xml version="1.0" encoding="UTF-8"?>', '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">', ...urls, '</urlset>'].join('\n'));
+  });
   registerPoemRoutes(app, database);
   registerReportRoutes(app, database);
   registerUserRoutes(app, database);
   registerAuthRoutes(app, database);
+}
+
+function isNoindexPath(pathname: string): boolean {
+  return /^(?:\/admin(?:\/|$)|\/profile(?:\/|$)|\/login(?:\/|$)|\/signup(?:\/|$)|\/poems\/new(?:\/|$)|\/error(?:\/|$))/.test(pathname);
+}
+
+function escapeXml(value: string): string {
+  return value.replace(/[&<>"']/g, character => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&apos;',
+  })[character]!);
 }
 
 function registerErrorHandlers(app: FastifyInstance): void {
