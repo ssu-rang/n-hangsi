@@ -1922,6 +1922,34 @@ label {
     font-size: 12px
 }
 
+.account-settings {
+    margin-top: 52px;
+    padding: 28px 0;
+    border-top: 3px solid var(--line)
+}
+
+.account-settings h2 {
+    margin: 0 0 10px;
+    font-size: 20px
+}
+
+.account-settings p {
+    color: var(--muted)
+}
+
+.account-delete-card {
+    width: min(560px, 100%);
+    margin: 24px auto;
+    padding: 34px 38px 38px;
+    border-top: 5px solid var(--primary);
+    border-bottom: 3px solid var(--line)
+}
+
+.account-delete-card h1 {
+    margin: 4px 0 22px;
+    font-size: 38px
+}
+
 .auth-page {
     min-height: 100vh
 }

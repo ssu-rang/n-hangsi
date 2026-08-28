@@ -7,6 +7,7 @@
 <body class="home-page">
 {% include '_header.njk' %}
 <main class="home-container py-4 py-lg-5">
+    {% if accountDeleted %}<div class="alert alert-success" role="status">회원탈퇴가 완료되었습니다.</div>{% endif %}
     <div class="home-layout">
         <aside class="category-sidebar" aria-label="N행시 카테고리">
             <h2>카테고리</h2>

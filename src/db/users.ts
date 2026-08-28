@@ -45,3 +45,24 @@ export function getProfileStats(db: DatabaseSync, userId: number): ProfileStats 
   `).get(userId) as unknown as { average_rating: number | null; rating_count: number };
   return { averageRating: row.average_rating, ratingCount: row.rating_count };
 }
+
+export function deleteUserAccount(db: DatabaseSync, userId: number): void {
+  db.exec('BEGIN IMMEDIATE');
+  try {
+    db.prepare(`
+      UPDATE poems
+      SET author_id = NULL, author_name = '익명'
+      WHERE author_id = ?
+    `).run(userId);
+    db.prepare(`
+      UPDATE reports
+      SET poem_author_id = NULL, poem_author_name = '익명'
+      WHERE poem_author_id = ?
+    `).run(userId);
+    db.prepare('DELETE FROM users WHERE id = ?').run(userId);
+    db.exec('COMMIT');
+  } catch (error) {
+    db.exec('ROLLBACK');
+    throw error;
+  }
+}

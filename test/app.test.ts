@@ -172,6 +172,68 @@ test('Google login, nickname, comment, rating, save and unsave flow', async t =>
   assert.doesNotMatch((await c.request({ method: 'GET', url: poemUrl })).body, /저장 취소/);
 });
 
+test('account deletion removes member activity and anonymizes authored poems', async t => {
+  const app = await testApp(); t.after(() => app.close());
+  const c = await client(app);
+  const csrf = await googleLogin(c, 'withdraw@example.com', '탈퇴회원');
+
+  let response = await c.request({
+    method: 'POST',
+    url: '/poems',
+    headers,
+    payload: form({
+      _csrf: csrf,
+      word: '이별',
+      'lines[0]': '이제 떠나요',
+      'lines[1]': '별처럼 남아요',
+    }),
+  });
+  const poemUrl = response.headers.location;
+  assert.ok(poemUrl);
+  for (const [suffix, payload] of [
+    ['comments', { content: '삭제될 댓글' }],
+    ['ratings', { score: '5' }],
+    ['saves', {}],
+  ] as const) {
+    response = await c.request({
+      method: 'POST',
+      url: `${poemUrl}/${suffix}`,
+      headers,
+      payload: form({ _csrf: csrf, ...payload }),
+    });
+    assert.equal(response.statusCode, 302);
+  }
+
+  const deletePage = await c.request({ method: 'GET', url: '/profile/delete' });
+  const deleteCsrf = deletePage.body.match(/name="_csrf" value="([^"]+)"/)?.[1];
+  assert.ok(deleteCsrf);
+  response = await c.request({
+    method: 'POST',
+    url: '/profile/delete',
+    headers,
+    payload: form({ _csrf: deleteCsrf, confirmation: '삭제' }),
+  });
+  assert.equal(response.statusCode, 400);
+  response = await c.request({
+    method: 'POST',
+    url: '/profile/delete',
+    headers,
+    payload: form({ _csrf: deleteCsrf, confirmation: '탈퇴' }),
+  });
+  assert.equal(response.statusCode, 302);
+  assert.equal(response.headers.location, '/?accountDeleted');
+  assert.equal((await c.request({ method: 'GET', url: '/profile' })).headers.location, '/login');
+
+  const poem = await c.request({ method: 'GET', url: poemUrl });
+  assert.equal(poem.statusCode, 200);
+  assert.match(poem.body, /<strong>익명<\/strong>/);
+  assert.doesNotMatch(poem.body, /탈퇴회원|삭제될 댓글/);
+
+  const newCsrf = await googleLogin(c, 'withdraw@example.com', '재가입회원');
+  assert.ok(newCsrf);
+  assert.match((await c.request({ method: 'GET', url: '/profile' })).headers.location ?? '', /^\/users\/\d+$/);
+});
+
 test('protected routes and csrf are enforced', async t => {
   const app = await testApp(); t.after(() => app.close());
   const tokenlessResponse = await app.inject({

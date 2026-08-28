@@ -25,6 +25,13 @@
         {% endfor %}
     </div>
     {% if not poems.length %}<div class="empty-state"><h2>아직 작성한 작품이 없습니다</h2></div>{% endif %}
+    {% if currentUser and currentUser.id == user.id %}
+    <section class="account-settings">
+        <h2>계정 관리</h2>
+        <p>계정을 더 이상 사용하지 않는다면 회원탈퇴를 진행할 수 있습니다.</p>
+        <a class="btn btn-outline-danger btn-sm" href="/profile/delete">회원탈퇴</a>
+    </section>
+    {% endif %}
 </main>
 {% include '_footer.njk' %}
 </body>

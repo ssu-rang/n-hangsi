@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="ko">
+<head>{% set title='회원탈퇴' %}{% include '_head.njk' %}</head>
+<body class="interior-page account-delete-page">
+{% include '_header.njk' %}
+<main class="container py-5">
+    <section class="account-delete-card">
+        <p class="eyebrow">ACCOUNT</p>
+        <h1>회원탈퇴</h1>
+        <p>탈퇴하면 계정, 댓글, 평가와 저장 기록이 삭제되며 복구할 수 없습니다.</p>
+        <p>작성한 N행시는 서비스에 남지만 작성자는 익명으로 변경됩니다.</p>
+        <form method="post" action="/profile/delete">
+            <input type="hidden" name="_csrf" value="{{ csrfToken }}">
+            <label for="confirmation">계속하려면 <strong>탈퇴</strong>를 입력하세요.</label>
+            <input id="confirmation" name="confirmation" required autocomplete="off">
+            {% if error %}<p class="text-danger mt-2">‘탈퇴’를 정확히 입력해 주세요.</p>{% endif %}
+            <div class="d-flex justify-content-end gap-2 mt-4">
+                <a class="btn btn-outline-secondary" href="/profile">취소</a>
+                <button class="btn btn-danger" type="submit">회원탈퇴</button>
+            </div>
+        </form>
+    </section>
+</main>
+{% include '_footer.njk' %}
+</body>
+</html>

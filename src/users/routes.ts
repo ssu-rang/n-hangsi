@@ -1,9 +1,9 @@
 import type { FastifyInstance } from 'fastify';
 import type { DatabaseSync } from 'node:sqlite';
 import { listPoemsByAuthor, listSavedPoems } from '../db/poems.js';
-import { findUserById, getProfileStats } from '../db/users.js';
+import { deleteUserAccount, findUserById, getProfileStats } from '../db/users.js';
 import { toPoemView } from '../poems/view.js';
-import { numericId } from '../shared/request.js';
+import { bodyOf, numericId } from '../shared/request.js';
 
 export function registerUserRoutes(app: FastifyInstance, db: DatabaseSync): void {
   app.get('/users/:id', async (request, reply) => {
@@ -35,6 +35,21 @@ export function registerUserRoutes(app: FastifyInstance, db: DatabaseSync): void
     return reply.view('users/saves.njk', {
       poems: listSavedPoems(db, request.currentUser!.id).map(toPoemView),
     });
+  });
+
+  app.get('/profile/delete', async (_request, reply) => {
+    return reply.view('users/delete.njk');
+  });
+
+  app.post('/profile/delete', async (request, reply) => {
+    const confirmation = String(bodyOf(request).confirmation ?? '').trim();
+    if (confirmation !== '탈퇴') {
+      return reply.view('users/delete.njk', { error: true }, 400);
+    }
+
+    deleteUserAccount(db, request.currentUser!.id);
+    await request.session.destroy();
+    return reply.redirect('/?accountDeleted');
   });
 }
 
