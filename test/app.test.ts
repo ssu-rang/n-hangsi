@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import type { FastifyInstance, InjectOptions } from 'fastify';
 import { buildApp } from '../src/app/build.js';
 import { createDatabase } from '../src/db/client.js';
-import { createPoem, listPopularPoems, ratePoem } from '../src/db/poems.js';
+import { createPoem, listPopularPoems, listTrendingPoems, ratePoem } from '../src/db/poems.js';
 import { createUser } from '../src/db/users.js';
 import { dailyWord, dailyWordCount } from '../src/poems/daily-word.js';
 
@@ -93,6 +93,74 @@ test('popular poems rank higher ratings before newer low ratings', t => {
   ratePoem(db, newerLowRatedPoem, lowRater.id, 1);
 
   assert.deepEqual(listPopularPoems(db).map(poem => poem.id), [highRatedPoem, newerLowRatedPoem]);
+});
+
+test('trending poems prioritize the last day and fill remaining places with older poems by rating', t => {
+  const db = createDatabase(':memory:'); t.after(() => db.close());
+  const author = createUser(db, {
+    username: 'trending-author@example.com',
+    nickname: '작성자',
+    provider: 'google',
+    providerUserId: 'trending-author',
+  });
+  const rater = createUser(db, {
+    username: 'trending-rater@example.com',
+    nickname: '평가자',
+    provider: 'google',
+    providerUserId: 'trending-rater',
+  });
+  const recentPoem = createPoem(db, '오늘', ['오늘의', '늘 좋은 작품'], author);
+  const olderHighRatedPoem = createPoem(db, '과거', ['과감한', '거장의 작품'], author);
+  const olderLowRatedPoem = createPoem(db, '추억', ['추억의', '억센 작품'], author);
+  ratePoem(db, recentPoem, rater.id, 1);
+  ratePoem(db, olderHighRatedPoem, rater.id, 5);
+  ratePoem(db, olderLowRatedPoem, rater.id, 2);
+  db.prepare("UPDATE poems SET created_at = datetime('now', '-2 days') WHERE id IN (?, ?)")
+    .run(olderHighRatedPoem, olderLowRatedPoem);
+
+  assert.deepEqual(
+    listTrendingPoems(db).map(poem => poem.id),
+    [recentPoem, olderHighRatedPoem, olderLowRatedPoem],
+  );
+});
+
+test('home hero recommends the highest-ranked poem for today\'s word', async t => {
+  const db = createDatabase(':memory:');
+  const author = createUser(db, {
+    username: 'hero-author@example.com',
+    nickname: '추천작가',
+    provider: 'google',
+    providerUserId: 'hero-author',
+  });
+  const highRater = createUser(db, {
+    username: 'hero-high@example.com',
+    nickname: '고평가자',
+    provider: 'google',
+    providerUserId: 'hero-high',
+  });
+  const lowRater = createUser(db, {
+    username: 'hero-low@example.com',
+    nickname: '저평가자',
+    provider: 'google',
+    providerUserId: 'hero-low',
+  });
+  const word = dailyWord();
+  const highRatedPoem = createPoem(db, word, ['인기 작품 첫째 줄', '인기 작품 둘째 줄'], author);
+  const newerLowRatedPoem = createPoem(db, word, ['최신 작품 첫째 줄', '최신 작품 둘째 줄'], author);
+  ratePoem(db, highRatedPoem, highRater.id, 5);
+  ratePoem(db, newerLowRatedPoem, lowRater.id, 1);
+
+  const app = await buildApp({
+    db,
+    sessionSecret: testSessionSecret,
+    appBaseUrl: 'http://localhost:8080',
+  });
+  t.after(() => app.close());
+  const response = await app.inject({ method: 'GET', url: '/' });
+  const hero = response.body.match(/<div class="featured-work">([\s\S]*?)<\/div>\s*<\/div>/)?.[1];
+  assert.ok(hero);
+  assert.match(hero, /인기 작품 첫째 줄/);
+  assert.doesNotMatch(hero, /최신 작품 첫째 줄/);
 });
 
 async function googleLogin(

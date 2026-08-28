@@ -67,6 +67,21 @@ export function listPopularPoems(db: DatabaseSync): PoemData[] {
   return rows.map(row => poemFromRow(db, row, null));
 }
 
+export function listTrendingPoems(db: DatabaseSync): PoemData[] {
+  const rows = db.prepare(`
+    ${POEM_QUERY}
+    GROUP BY p.id
+    ORDER BY
+      CASE WHEN p.created_at >= datetime('now', '-1 day') THEN 0 ELSE 1 END,
+      rating DESC,
+      rating_count DESC,
+      comment_count DESC,
+      p.created_at DESC,
+      p.id DESC
+  `).all() as unknown as PoemRow[];
+  return rows.map(row => poemFromRow(db, row, null));
+}
+
 export function listPoemsByAuthor(db: DatabaseSync, authorId: number): PoemData[] {
   const rows = db.prepare(`
     ${POEM_QUERY}

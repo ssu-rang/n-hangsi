@@ -7,6 +7,7 @@ import {
   listComments,
   listPopularPoems,
   listPoems,
+  listTrendingPoems,
   ratePoem,
   savePoem,
   unsavePoem,
@@ -24,12 +25,11 @@ export function registerPoemRoutes(app: FastifyInstance, db: DatabaseSync): void
     const lineFilter = requestedFilter && validLineFilters.has(requestedFilter) ? requestedFilter : 'all';
     const accountDeleted = 'accountDeleted' in queryOf(request);
     const promptWord = dailyWord();
-    const popularPoems = listPopularPoems(db).map(toPoemView)
+    const rankedPoems = listPopularPoems(db).map(toPoemView);
+    const popularPoems = listTrendingPoems(db).map(toPoemView)
       .filter(poem => matchesLineFilter(poem.word, lineFilter))
       .slice(0, 5);
-    const promptPoems = listPoems(db).map(toPoemView)
-      .filter(poem => matchesKeyword(poem, promptWord))
-      .filter(poem => poem.word === promptWord);
+    const promptPoems = rankedPoems.filter(poem => poem.word === promptWord);
 
     return reply.view('home.njk', { accountDeleted, popularPoems, promptPoems, lineFilter, promptWord });
   });
