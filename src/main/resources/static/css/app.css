@@ -2435,6 +2435,152 @@ body *, body *::before, body *::after {
     box-shadow: none !important
 }
 
+/* Home placements use page-specific names to avoid generic cosmetic filters. */
+.home-sponsor-sidebar,
+.home-sponsor-hero,
+.home-sponsor-feed,
+.home-sponsor-between {
+    position: relative;
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr);
+    align-items: stretch;
+    min-width: 0;
+    padding: 0;
+    background: var(--surface);
+    border: 3px solid var(--line);
+    border-top-color: var(--secondary);
+    color: var(--ink)
+}
+
+.home-sponsor-sidebar .ad-mark,
+.home-sponsor-hero .ad-mark,
+.home-sponsor-feed .ad-mark,
+.home-sponsor-between .ad-mark {
+    position: static;
+    justify-self: start;
+    margin: 12px 12px 0;
+    padding: 2px 5px;
+    background: var(--primary);
+    color: var(--surface);
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: .06em;
+    line-height: 1.4
+}
+
+.home-sponsor-stack {
+    display: grid;
+    grid-template-rows: repeat(3, auto);
+    width: 100%;
+    margin-top: 28px
+}
+
+.home-sponsor-sidebar {
+    width: 100%;
+    min-height: 0;
+    aspect-ratio: 1 / 3;
+    border-bottom: 0
+}
+
+.home-sponsor-sidebar:last-child {
+    border-bottom: 3px solid var(--primary)
+}
+
+.home-sponsor-hero {
+    width: 100%;
+    min-height: 0;
+    aspect-ratio: 3 / 1;
+    margin-top: 22px;
+    border-bottom-color: var(--primary)
+}
+
+.home-sponsor-hero .ad-slot-content {
+    display: flex;
+    align-items: center;
+    padding: 10px 24px 22px
+}
+
+.home-sponsor-hero strong {
+    margin: 0;
+    font-size: clamp(20px, 2.1vw, 28px);
+    font-weight: 800;
+    line-height: 1.12
+}
+
+.home-sponsor-feed {
+    grid-column: 2;
+    align-self: stretch;
+    border-bottom: 0
+}
+
+.home-sponsor-feed-rank-1-2 {
+    grid-row: 1 / span 2;
+    aspect-ratio: 1 / 2
+}
+
+.home-sponsor-feed-rank-3-4 {
+    grid-row: 3 / span 2;
+    aspect-ratio: 1 / 2;
+    border-top-color: var(--primary)
+}
+
+.home-sponsor-feed-rank-5 {
+    grid-row: 5;
+    aspect-ratio: 1 / 1;
+    border-bottom: 3px solid var(--primary)
+}
+
+.home-sponsor-between {
+    display: none
+}
+
+@media (max-width: 900px) {
+    .home-sponsor-stack {
+        grid-column: 1 / -1;
+        grid-template-columns: 1fr;
+        grid-template-rows: auto;
+        margin-top: 0
+    }
+
+    .home-sponsor-sidebar {
+        aspect-ratio: 3 / 1
+    }
+}
+
+@media (max-width: 700px) {
+    .home-sponsor-stack {
+        display: none
+    }
+
+    .home-sponsor-hero {
+        min-height: 150px
+    }
+
+    .home-sponsor-between {
+        display: grid;
+        width: 100%;
+        aspect-ratio: 3 / 1;
+        margin: 24px 0;
+        border-bottom-color: var(--primary)
+    }
+
+    .home-sponsor-feed {
+        grid-column: 1;
+        grid-row: auto;
+        margin-top: 18px;
+        aspect-ratio: 3 / 1
+    }
+
+    .home-sponsor-feed-rank-1-2,
+    .home-sponsor-feed-rank-3-4 {
+        display: none
+    }
+
+    .home-sponsor-feed-rank-5 {
+        grid-row: 6
+    }
+}
+
 .card,
 .button,
 .btn,

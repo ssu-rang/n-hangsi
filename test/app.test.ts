@@ -98,9 +98,9 @@ test('public pages, poem validation and anonymous creation', async t => {
   assert.match(initialExplorePage.body, /aria-current="page"[^>]*>1<\/a>/);
   const emptyHome = await c.request({ method: 'GET', url: '/' });
   assert.equal(emptyHome.body.match(/class="community-rank"/g)?.length, 5);
-  assert.equal(emptyHome.body.match(/class="sidebar-ad"/g)?.length, 3);
-  assert.equal(emptyHome.body.match(/class="feed-ad feed-ad-rank-/g)?.length, 3);
-  assert.equal(emptyHome.body.match(/class="hero-ad"/g)?.length, 1);
+  assert.equal(emptyHome.body.match(/class="home-sponsor-sidebar"/g)?.length, 3);
+  assert.equal(emptyHome.body.match(/class="home-sponsor-feed home-sponsor-feed-rank-/g)?.length, 3);
+  assert.equal(emptyHome.body.match(/class="home-sponsor-hero"/g)?.length, 1);
   assert.equal(emptyHome.body.match(/popular-slot-empty/g)?.length, 5);
   assert.equal(emptyHome.headers['cache-control'], 'no-store');
   const writePage = await c.request({ method: 'GET', url: '/poems/new' });
@@ -132,6 +132,10 @@ test('public pages, poem validation and anonymous creation', async t => {
   const stylesheet = await c.request({ method: 'GET', url: '/css/app.css' });
   assert.equal(stylesheet.headers['content-type'], 'text/css; charset=utf-8');
   assert.equal(stylesheet.headers['cache-control'], 'no-cache, must-revalidate');
+  const logo = await c.request({ method: 'GET', url: '/images/nhangsi-logo.v1.png' });
+  assert.equal(logo.statusCode, 200);
+  assert.equal(logo.headers['content-type'], 'image/png');
+  assert.equal(logo.headers['cache-control'], 'public, max-age=31536000, immutable');
   assert.equal((await c.request({ method: 'GET', url: '/poems/999999' })).statusCode, 404);
 });
 

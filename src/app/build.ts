@@ -32,9 +32,14 @@ const protectedPaths = [
 ];
 
 const staticAssets = [
-  ['/css/app.css', 'css/app.css', 'text/css; charset=utf-8'],
-  ['/js/server-app.js', 'js/server-app.js', 'text/javascript; charset=utf-8'],
-  ['/images/nhangsi-logo.png', 'images/nhangsi-logo.png', 'image/png'],
+  ['/css/app.css', 'css/app.css', 'text/css; charset=utf-8', 'no-cache, must-revalidate'],
+  ['/js/server-app.js', 'js/server-app.js', 'text/javascript; charset=utf-8', 'no-cache, must-revalidate'],
+  [
+    '/images/nhangsi-logo.v1.png',
+    'images/nhangsi-logo.v1.png',
+    'image/png',
+    'public, max-age=31536000, immutable',
+  ],
 ] as const;
 
 export async function buildApp(options: AppOptions = {}): Promise<FastifyInstance> {
@@ -114,11 +119,11 @@ function registerViewRenderer(app: FastifyInstance): void {
 function registerStaticAssets(app: FastifyInstance): void {
   const staticRoot = join(sourceRoot, 'main/resources/static');
 
-  for (const [url, filename, contentType] of staticAssets) {
+  for (const [url, filename, contentType, cacheControl] of staticAssets) {
     app.get(url, async (_request, reply) => {
       const contents = await readFile(join(staticRoot, filename));
       return reply
-        .header('Cache-Control', 'no-cache, must-revalidate')
+        .header('Cache-Control', cacheControl)
         .type(contentType)
         .send(contents);
     });
