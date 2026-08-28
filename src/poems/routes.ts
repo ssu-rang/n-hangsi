@@ -11,6 +11,7 @@ import {
   unsavePoem,
 } from '../db/poems.js';
 import { bodyOf, numericId, queryOf } from '../shared/request.js';
+import { dailyWord } from './daily-word.js';
 import { validatePoem } from './validation.js';
 import { matchesKeyword, toCommentView, toPoemView } from './view.js';
 
@@ -20,7 +21,8 @@ export function registerPoemRoutes(app: FastifyInstance, db: DatabaseSync): void
   app.get('/', async (request, reply) => {
     const requestedFilter = queryOf(request).lines;
     const lineFilter = requestedFilter && validLineFilters.has(requestedFilter) ? requestedFilter : 'all';
-    const promptWord = '푸른하늘';
+    const accountDeleted = 'accountDeleted' in queryOf(request);
+    const promptWord = dailyWord();
     const popularPoems = listPoems(db).map(toPoemView)
       .filter(poem => matchesLineFilter(poem.word, lineFilter))
       .slice(0, 5);
@@ -28,7 +30,7 @@ export function registerPoemRoutes(app: FastifyInstance, db: DatabaseSync): void
       .filter(poem => matchesKeyword(poem, promptWord))
       .filter(poem => poem.word === promptWord);
 
-    return reply.view('home.njk', { popularPoems, promptPoems, lineFilter, promptWord });
+    return reply.view('home.njk', { accountDeleted, popularPoems, promptPoems, lineFilter, promptWord });
   });
 
   app.get('/poems', async (request, reply) => {

@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import type { FastifyInstance, InjectOptions } from 'fastify';
 import { buildApp } from '../src/app/build.js';
+import { dailyWord, dailyWordCount } from '../src/poems/daily-word.js';
 
 const testSessionSecret = 'test-only-session-secret-0123456789-ABCDEF';
 process.env.GOOGLE_CLIENT_ID = 'test-google-client';
@@ -53,6 +54,15 @@ function form(payload: Record<string, string | undefined>): string {
   return new URLSearchParams(Object.entries(payload).filter((entry): entry is [string, string] => entry[1] !== undefined)).toString();
 }
 const headers = { 'content-type': 'application/x-www-form-urlencoded' };
+
+test('daily words do not repeat before the full rotation', () => {
+  const words = Array.from({ length: dailyWordCount() }, (_, day) =>
+    dailyWord(new Date(Date.UTC(2026, 7, 28 + day))),
+  );
+  assert.equal(dailyWordCount(), 496);
+  assert.equal(new Set(words).size, words.length);
+  assert.ok(words.every(word => [...word].length >= 2 && [...word].length <= 5));
+});
 
 async function googleLogin(
   c: Awaited<ReturnType<typeof client>>,
