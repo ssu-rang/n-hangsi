@@ -275,7 +275,8 @@ test('Google login, nickname, comment, rating, save and unsave flow', async t =>
   for (const [suffix, payload] of [['comments', { content: '좋아요' }], ['ratings', { score: '5' }], ['saves', {}]] as const) {
     response = await c.request({ method: 'POST', url: `${poemUrl}/${suffix}`, headers, payload: form({ _csrf: authenticatedCsrf, ...payload }) }); assert.equal(response.statusCode, 302);
   }
-  response = await c.request({ method: 'GET', url: poemUrl }); assert.match(response.body, /좋아요/); assert.match(response.body, /★ 5/); assert.match(response.body, /저장 취소/);
+  response = await c.request({ method: 'GET', url: poemUrl }); assert.match(response.body, /좋아요/); assert.match(response.body, /★ 5/); assert.match(response.body, /bookmark-button is-saved/);
+  assert.match(response.body, /aria-label="저장 취소"/);
   assert.match(response.body, /<details class="report-disclosure">/);
   assert.match(response.body, /<summary class="btn btn-outline-secondary">신고하기<\/summary>/);
   assert.match(response.body, /신고 사유를 구체적으로 적어주세요/);
@@ -306,11 +307,12 @@ test('Google login, nickname, comment, rating, save and unsave flow', async t =>
   assert.match(profileRedirect.headers.location ?? '', /^\/users\/\d+$/);
   const profilePage = await c.request({ method: 'GET', url: profileRedirect.headers.location! });
   assert.equal(profilePage.statusCode, 200); assert.match(profilePage.body, /사과/);
+  assert.doesNotMatch(profilePage.body, /아직 소개가 없습니다/);
   const savesPage = await c.request({ method: 'GET', url: '/profile/saves' });
   assert.equal(savesPage.statusCode, 200); assert.match(savesPage.body, /사과/);
   assert.doesNotMatch(savesPage.body, /다시 읽고 싶은 문장을 모아두었어요/);
   response = await c.request({ method: 'POST', url: `${poemUrl}/saves`, headers, payload: form({ _csrf: authenticatedCsrf, _method: 'delete' }) }); assert.equal(response.statusCode, 302);
-  assert.doesNotMatch((await c.request({ method: 'GET', url: poemUrl })).body, /저장 취소/);
+  assert.doesNotMatch((await c.request({ method: 'GET', url: poemUrl })).body, /bookmark-button is-saved/);
 
   response = await c.request({ method: 'POST', url: '/logout', headers, payload: form({ _csrf: authenticatedCsrf }) });
   assert.equal(response.headers.location, '/');

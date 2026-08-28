@@ -11,7 +11,6 @@ export function createDatabase(filename: string = process.env.DATABASE_PATH || '
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       username TEXT NOT NULL,
       nickname TEXT NOT NULL CHECK(length(nickname) BETWEEN 1 AND 30),
-      bio TEXT NOT NULL DEFAULT '',
       password TEXT,
       provider TEXT NOT NULL DEFAULT 'local',
       provider_user_id TEXT,

@@ -22,6 +22,19 @@
         <div class="detail-meta">
             <strong class="rating">★ {{ poem.rating }}</strong>
             <span>평가 {{ poem.ratingCount }}</span><span>댓글 {{ poem.commentCount }}</span>
+            {% if currentUser %}
+            <form class="detail-save-form" method="post" action="/poems/{{ poem.id }}/saves">
+                <input type="hidden" name="_csrf" value="{{ csrfToken }}">
+                {% if poem.saved %}<input type="hidden" name="_method" value="delete">{% endif %}
+                <button class="bookmark-button{% if poem.saved %} is-saved{% endif %}" type="submit"
+                        aria-label="{% if poem.saved %}저장 취소{% else %}작품 저장{% endif %}"
+                        title="{% if poem.saved %}저장 취소{% else %}작품 저장{% endif %}">
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="M6 3.75A1.75 1.75 0 0 1 7.75 2h8.5A1.75 1.75 0 0 1 18 3.75V22l-6-3.75L6 22V3.75Z"/>
+                    </svg>
+                </button>
+            </form>
+            {% endif %}
         </div>
         {% if currentUser %}
         <div class="detail-actions">
@@ -32,15 +45,6 @@
                     {% for score in [5,4,3,2,1] %}<option value="{{ score }}">{{ score }}점</option>{% endfor %}
                 </select>
                 <button class="btn btn-sm btn-primary">평가</button>
-            </form>
-            <form class="save-form" method="post" action="/poems/{{ poem.id }}/saves">
-                <input type="hidden" name="_csrf" value="{{ csrfToken }}">
-                {% if poem.saved %}
-                <input type="hidden" name="_method" value="delete">
-                <button class="btn btn-outline-secondary">저장 취소</button>
-                {% else %}
-                <button class="btn btn-outline-primary">저장</button>
-                {% endif %}
             </form>
         </div>
         {% endif %}

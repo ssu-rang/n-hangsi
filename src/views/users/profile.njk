@@ -5,8 +5,7 @@
 {% include '_header.njk' %}
 <main class="container pb-5 profile-container">
     <section class="profile">
-        <span class="avatar large">{{ user.nickname[0] }}</span>
-        <div><h1>{{ user.nickname }}</h1><p class="text-secondary mb-0">{{ user.bio or '아직 소개가 없습니다.' }}</p></div>
+        <h1>{{ user.nickname }}</h1>
     </section>
     <section class="profile-stats" aria-label="활동 통계">
         {% for value,label in [[user.poemCount,'작성 작품'],[user.averageRating if user.averageRating != null else '-', '평균 별점'],[user.ratingCount,'총 평가']] %}

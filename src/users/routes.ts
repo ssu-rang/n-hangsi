@@ -18,7 +18,6 @@ export function registerUserRoutes(app: FastifyInstance, db: DatabaseSync): void
       user: {
         id: user.id,
         nickname: user.nickname,
-        bio: user.bio,
         poemCount: authoredPoems.length,
         averageRating: stats.averageRating === null ? null : roundRating(stats.averageRating),
         ratingCount: stats.ratingCount,

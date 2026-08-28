@@ -167,6 +167,7 @@ footer {
 
 .brand-logo-crop {
     display: block;
+    flex: none;
     width: 65px;
     height: 37px;
     overflow: hidden
@@ -1020,19 +1021,6 @@ label {
     min-height: 24px
 }
 
-.profile {
-    display: flex;
-    gap: 18px;
-    align-items: center;
-    margin: 52px 0
-}
-
-.avatar.large {
-    width: 66px;
-    height: 66px;
-    border-radius: 50%
-}
-
 .stats {
     display: grid;
     grid-template-columns:repeat(3, 1fr);
@@ -1777,14 +1765,6 @@ label {
     font-size: clamp(36px, 5vw, 50px)
 }
 
-.interior-page .avatar.large {
-    width: 78px;
-    height: 78px;
-    border-radius: 4px;
-    background: var(--primary);
-    font-size: 28px
-}
-
 .interior-page .stats {
     gap: 0;
     border-bottom: 3px solid var(--line)
@@ -1994,11 +1974,53 @@ label {
 
 .detail-meta {
     display: flex;
+    align-items: center;
     flex-wrap: wrap;
     gap: 18px;
     padding-top: 16px;
     border-top: 2px solid var(--line);
     color: var(--muted)
+}
+
+.detail-save-form {
+    margin: 0 0 0 auto
+}
+
+.bookmark-button {
+    display: grid;
+    place-items: center;
+    width: 34px;
+    height: 34px;
+    padding: 5px;
+    background: transparent;
+    border: 0;
+    border-radius: 4px;
+    color: var(--muted);
+    cursor: pointer
+}
+
+.bookmark-button svg {
+    width: 100%;
+    height: 100%;
+    fill: none;
+    stroke: currentColor;
+    stroke-linejoin: round;
+    stroke-width: 1.8
+}
+
+.bookmark-button:hover,
+.bookmark-button:focus-visible,
+.bookmark-button.is-saved {
+    color: var(--primary)
+}
+
+.bookmark-button:focus-visible {
+    outline: 2px solid var(--secondary);
+    outline-offset: 2px
+}
+
+.bookmark-button.is-saved svg {
+    fill: currentColor
 }
 
 .detail-actions {
@@ -2023,15 +2045,6 @@ label {
 
 .rating-form .btn {
     width: 100%;
-    white-space: nowrap
-}
-
-.detail-actions .save-form {
-    margin-left: auto
-}
-
-.save-form .btn {
-    height: 100%;
     white-space: nowrap
 }
 
@@ -2503,7 +2516,7 @@ label {
     }
 
     .brand-logo-crop {
-        width: 56px
+        width: 65px
     }
 
     .daily-overview {
@@ -2828,10 +2841,12 @@ body *, body *::before, body *::after {
 
 .home-house-banner {
     width: 100%;
+    max-width: 100%;
     min-height: 0;
     aspect-ratio: 3 / 1;
     margin-top: 22px;
-    border-bottom-color: var(--primary)
+    border-bottom-color: var(--primary);
+    overflow: hidden
 }
 
 .home-house-banner .house-banner-content {
@@ -2937,7 +2952,7 @@ body *, body *::before, body *::after {
     }
 
     .home-house-banner {
-        min-height: 150px
+        min-height: 0
     }
 
     .home-sponsor-between {
