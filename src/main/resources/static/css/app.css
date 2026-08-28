@@ -2089,9 +2089,14 @@ label {
     display: none
 }
 
+.report-disclosure {
+    text-align: right
+}
+
 .report-disclosure form {
     margin-top: 18px;
-    padding: 18px 0 26px
+    padding: 18px 0 26px;
+    text-align: left
 }
 
 .report-disclosure label {
