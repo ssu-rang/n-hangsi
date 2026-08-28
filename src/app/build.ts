@@ -147,8 +147,17 @@ function registerSecurityHooks(
   app.addHook('preHandler', async (request, reply) => {
     const body = bodyOf(request);
     const changesState = ['POST', 'PUT', 'PATCH', 'DELETE'].includes(request.method);
+    const submittedCsrfToken = body._csrf;
+    const sessionCsrfToken = request.session.csrfToken;
 
-    if (changesState && body._csrf !== request.session.csrfToken) {
+    if (
+      changesState
+      && (
+        typeof submittedCsrfToken !== 'string'
+        || typeof sessionCsrfToken !== 'string'
+        || submittedCsrfToken !== sessionCsrfToken
+      )
+    ) {
       return reply.view('error/403.njk', {}, 403);
     }
 
@@ -272,9 +281,10 @@ function isProductionEnvironment(): boolean {
   return process.env.NODE_ENV === 'production' || Boolean(process.env.RAILWAY_ENVIRONMENT_ID);
 }
 
-function configuredTrustProxy(): false | string[] {
+function configuredTrustProxy(): boolean | string[] {
   const proxies = process.env.TRUSTED_PROXIES?.split(',').map(value => value.trim()).filter(Boolean);
-  return proxies?.length ? proxies : false;
+  if (proxies?.length) return proxies;
+  return Boolean(process.env.RAILWAY_ENVIRONMENT_ID);
 }
 
 interface RateLimitPolicy {
@@ -285,14 +295,21 @@ interface RateLimitPolicy {
 
 function rateLimitPolicies(request: import('fastify').FastifyRequest): RateLimitPolicy[] {
   const path = request.url.split('?')[0] ?? request.url;
-  const ip = request.ip;
+  const ip = clientIp(request);
   const actor = request.currentUser ? `user:${request.currentUser.id}` : `session:${request.session.sessionId}`;
 
   if (request.method === 'GET' && path === '/oauth2/authorization/google') {
     return [{ key: `oauth:${ip}`, limit: 20, windowMs: 15 * 60_000 }];
   }
   if (request.method === 'POST' && path === '/poems') {
-    return [{ key: `poem:${actor}:${ip}`, limit: request.currentUser ? 30 : 10, windowMs: 60 * 60_000 }];
+    const actorPolicy = {
+      key: `poem:${actor}`,
+      limit: request.currentUser ? 30 : 10,
+      windowMs: 60 * 60_000,
+    };
+    return request.currentUser
+      ? [actorPolicy]
+      : [actorPolicy, { key: `poem-ip:${ip}`, limit: 30, windowMs: 60 * 60_000 }];
   }
   if (request.method === 'POST' && /^\/poems\/\d+\/(comments|ratings|saves)$/.test(path)) {
     return [{ key: `interaction:${actor}`, limit: 60, windowMs: 15 * 60_000 }];
@@ -301,6 +318,13 @@ function rateLimitPolicies(request: import('fastify').FastifyRequest): RateLimit
     return [{ key: `report:${actor}`, limit: 10, windowMs: 60 * 60_000 }];
   }
   return [];
+}
+
+function clientIp(request: import('fastify').FastifyRequest): string {
+  const railwayRealIp = request.headers['x-real-ip'];
+  return process.env.RAILWAY_ENVIRONMENT_ID && typeof railwayRealIp === 'string'
+    ? railwayRealIp
+    : request.ip;
 }
 
 class InMemoryRateLimiter {

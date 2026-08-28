@@ -160,6 +160,18 @@ test('Google login, nickname, comment, rating, save and unsave flow', async t =>
 
 test('protected routes and csrf are enforced', async t => {
   const app = await testApp(); t.after(() => app.close());
+  const tokenlessResponse = await app.inject({
+    method: 'POST',
+    url: '/poems',
+    headers,
+    payload: form({
+      word: '?ш낵',
+      'lines[0]': '?щ옉?섍퀬',
+      'lines[1]': '怨쇳븯寃??껋옄',
+    }),
+  });
+  assert.equal(tokenlessResponse.statusCode, 403);
+
   const c = await client(app);
   assert.equal((await c.request({ method: 'GET', url: '/profile' })).headers.location, '/login');
   assert.equal((await c.request({ method: 'GET', url: '/signup' })).headers.location, '/login');
@@ -218,6 +230,24 @@ test('anonymous poem creation is rate limited', async t => {
       payload: form({ _csrf: c.csrf }),
     });
   }
+  assert.equal(response!.statusCode, 429);
+  assert.ok(Number(response!.headers['retry-after']) > 0);
+});
+
+test('anonymous poem creation is also rate limited by IP across sessions', async t => {
+  const app = await testApp(); t.after(() => app.close());
+  let response;
+
+  for (let attempt = 0; attempt < 31; attempt += 1) {
+    const c = await client(app);
+    response = await c.request({
+      method: 'POST',
+      url: '/poems',
+      headers,
+      payload: form({ _csrf: c.csrf }),
+    });
+  }
+
   assert.equal(response!.statusCode, 429);
   assert.ok(Number(response!.headers['retry-after']) > 0);
 });
