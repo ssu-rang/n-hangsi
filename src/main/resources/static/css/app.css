@@ -584,7 +584,8 @@ header .navbar {
     line-height: 1.12
 }
 
-.hero-ad-initial {
+.hero-ad-initial,
+.house-banner-initial {
     color: var(--primary);
     font-size: 1.18em;
     font-style: normal;
@@ -2583,7 +2584,7 @@ body *, body *::before, body *::after {
 
 /* Home placements use page-specific names to avoid generic cosmetic filters. */
 .home-sponsor-sidebar,
-.home-sponsor-hero,
+.home-house-banner,
 .home-sponsor-feed,
 .home-sponsor-between {
     position: relative;
@@ -2599,7 +2600,7 @@ body *, body *::before, body *::after {
 }
 
 .home-sponsor-sidebar .ad-mark,
-.home-sponsor-hero .ad-mark,
+.home-house-banner .house-banner-mark,
 .home-sponsor-feed .ad-mark,
 .home-sponsor-between .ad-mark {
     position: static;
@@ -2632,7 +2633,7 @@ body *, body *::before, body *::after {
     border-bottom: 3px solid var(--primary)
 }
 
-.home-sponsor-hero {
+.home-house-banner {
     width: 100%;
     min-height: 0;
     aspect-ratio: 3 / 1;
@@ -2640,13 +2641,21 @@ body *, body *::before, body *::after {
     border-bottom-color: var(--primary)
 }
 
-.home-sponsor-hero .ad-slot-content {
+.home-house-banner .house-banner-content {
     display: flex;
     align-items: center;
-    padding: 10px 24px 22px
+    padding: 10px 24px 22px;
+    color: inherit;
+    text-decoration: none
 }
 
-.home-sponsor-hero strong {
+.home-house-banner .house-banner-content:hover,
+.home-house-banner .house-banner-content:focus-visible {
+    color: var(--primary);
+    text-decoration: none
+}
+
+.home-house-banner strong {
     margin: 0;
     font-size: clamp(20px, 2.1vw, 28px);
     font-weight: 800;
@@ -2698,7 +2707,7 @@ body *, body *::before, body *::after {
         display: none
     }
 
-    .home-sponsor-hero {
+    .home-house-banner {
         min-height: 150px
     }
 
