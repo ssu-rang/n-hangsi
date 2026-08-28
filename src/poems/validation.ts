@@ -22,6 +22,8 @@ export function validatePoem(body: Fields): ValidationResult {
     errors.word = '제시어에는 공백을 넣을 수 없습니다.';
   } else if (characters.length < 2 || characters.length > 5) {
     errors.word = '제시어는 2~5자여야 합니다.';
+  } else if (!characters.every(character => /^[가-힣]$/u.test(character))) {
+    errors.word = '제시어는 완성된 한글로 입력해 주세요.';
   }
 
   if (lines.length !== characters.length) {

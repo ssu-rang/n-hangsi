@@ -144,20 +144,28 @@ test('public pages, poem validation and anonymous creation', async t => {
   assert.equal(emptyHome.body.match(/class="home-sponsor-feed home-sponsor-feed-rank-/g)?.length, 3);
   assert.equal(emptyHome.body.match(/class="home-house-banner"/g)?.length, 1);
   assert.doesNotMatch(emptyHome.body, /home-house-banner"[^>]*data-ad-/);
-  assert.match(emptyHome.body, /class="house-banner-content" href="https:\/\/github\.com\/ssu-rang\/n-hangsi\/blob\/main\/ADVERTISING\.md"/);
+  assert.match(emptyHome.body, /class="house-banner-content" href="\/advertising"/);
   assert.equal(emptyHome.body.match(/popular-slot-empty/g)?.length, 5);
   assert.equal(emptyHome.headers['cache-control'], 'no-store');
   const privacyPage = await c.request({ method: 'GET', url: '/privacy' });
   assert.equal(privacyPage.statusCode, 200);
   assert.match(privacyPage.body, /<h1>개인정보처리방침<\/h1>/);
   assert.match(privacyPage.body, /ssurang\.contact@gmail\.com/);
+  const advertisingPage = await c.request({ method: 'GET', url: '/advertising' });
+  assert.equal(advertisingPage.statusCode, 200);
+  assert.match(advertisingPage.body, /<h1>N행시 광고 안내<\/h1>/);
+  assert.match(advertisingPage.body, /최대 <strong>2주<\/strong>/);
+  assert.match(advertisingPage.body, /href="mailto:ssurang\.contact@gmail\.com"/);
+  assert.match(advertisingPage.body, /Instagram DM/);
   const writePage = await c.request({ method: 'GET', url: '/poems/new' });
   assert.match(writePage.body, /maxlength="5"/);
   let response = await c.request({ method: 'POST', url: '/poems', headers, payload: form({ _csrf: c.csrf, word: '가나다라마바' }) });
   assert.equal(response.statusCode, 200);
   assert.match(response.body, /제시어는 2~5자여야 합니다/);
   response = await c.request({ method: 'POST', url: '/poems', headers, payload: form({ _csrf: c.csrf, word: '고양이', 'lines[0]': '다른 시작', 'lines[1]': '양처럼', 'lines[2]': '이렇게' }) });
-  assert.equal(response.statusCode, 200); assert.match(response.body, /시작해야 합니다/);
+  assert.equal(response.statusCode, 200); assert.match(response.body, /data-line-error>.*시작해야 합니다/);
+  response = await c.request({ method: 'POST', url: '/poems', headers, payload: form({ _csrf: c.csrf, word: 'ㄱㅏ' }) });
+  assert.equal(response.statusCode, 200); assert.match(response.body, /제시어는 완성된 한글로 입력해 주세요/);
   response = await c.request({ method: 'POST', url: '/poems', headers, payload: form({ _csrf: c.csrf, word: '고양이', 'lines[0]': '고요한 밤', 'lines[1]': '양처럼 포근한', 'lines[2]': '이 시간' }) });
   assert.equal(response.statusCode, 302); const location = response.headers.location; assert.ok(location);
   response = await c.request({ method: 'GET', url: location }); assert.equal(response.statusCode, 200); assert.match(response.body, /익명/);
@@ -200,12 +208,16 @@ test('Google login, nickname, comment, rating, save and unsave flow', async t =>
     response = await c.request({ method: 'POST', url: `${poemUrl}/${suffix}`, headers, payload: form({ _csrf: authenticatedCsrf, ...payload }) }); assert.equal(response.statusCode, 302);
   }
   response = await c.request({ method: 'GET', url: poemUrl }); assert.match(response.body, /좋아요/); assert.match(response.body, /★ 5/); assert.match(response.body, /저장 취소/);
+  assert.match(response.body, /<details class="report-disclosure">/);
+  assert.match(response.body, /<summary class="btn btn-outline-secondary">신고하기<\/summary>/);
+  assert.match(response.body, /신고 사유를 구체적으로 적어주세요/);
   const profileRedirect = await c.request({ method: 'GET', url: '/profile' });
   assert.match(profileRedirect.headers.location ?? '', /^\/users\/\d+$/);
   const profilePage = await c.request({ method: 'GET', url: profileRedirect.headers.location! });
   assert.equal(profilePage.statusCode, 200); assert.match(profilePage.body, /사과/);
   const savesPage = await c.request({ method: 'GET', url: '/profile/saves' });
   assert.equal(savesPage.statusCode, 200); assert.match(savesPage.body, /사과/);
+  assert.doesNotMatch(savesPage.body, /다시 읽고 싶은 문장을 모아두었어요/);
   response = await c.request({ method: 'POST', url: `${poemUrl}/saves`, headers, payload: form({ _csrf: authenticatedCsrf, _method: 'delete' }) }); assert.equal(response.statusCode, 302);
   assert.doesNotMatch((await c.request({ method: 'GET', url: poemUrl })).body, /저장 취소/);
 

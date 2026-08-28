@@ -3,7 +3,7 @@
 <head>{% set title='프로필' %}{% include '_head.njk' %}</head>
 <body class="interior-page profile-page">
 {% include '_header.njk' %}
-<main class="container py-5">
+<main class="container pb-5 profile-container">
     <section class="profile">
         <span class="avatar large">{{ user.nickname[0] }}</span>
         <div><h1>{{ user.nickname }}</h1><p class="text-secondary mb-0">{{ user.bio or '아직 소개가 없습니다.' }}</p></div>

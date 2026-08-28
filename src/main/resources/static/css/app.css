@@ -1237,8 +1237,21 @@ label {
     padding: 20px 0 18px
 }
 
+.interior-page.saves-page .page-head {
+    padding-bottom: 10px;
+    border-bottom: 0
+}
+
+.interior-page.saves-page .explore-grid {
+    border-top: 3px solid #b8b8b8
+}
+
+.interior-page.saves-page .explore-grid .poem-card:first-child {
+    border-top: 0 !important
+}
+
 .interior-page.explore-page main {
-    padding-top: 28px !important
+    padding-top: 0 !important
 }
 
 .marketplace-page-head {
@@ -1265,7 +1278,8 @@ label {
 
 .combined-explore,
 .combined-write {
-    min-width: 0
+    min-width: 0;
+    padding-top: 28px
 }
 
 .combined-write {
@@ -1718,7 +1732,7 @@ label {
 
 .interior-page .profile {
     margin: 0;
-    padding: 52px 0 30px;
+    padding: 28px 0 30px;
     border-bottom: 3px solid var(--line)
 }
 
@@ -1962,8 +1976,69 @@ label {
     margin: 0
 }
 
-.interior-page .comments {
+.detail-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1.15fr) minmax(340px, .85fr);
+    align-items: start;
+    max-width: 1180px;
+    padding-top: 52px !important
+}
+
+.detail-column {
+    min-width: 0;
+    padding-right: 42px
+}
+
+.interior-page .detail-column .detail {
+    max-width: none;
     margin-top: 0
+}
+
+.report-section {
+    max-width: none;
+    margin: 24px auto 0;
+    padding: 0 38px
+}
+
+.report-section .alert {
+    margin-bottom: 14px
+}
+
+.report-disclosure summary {
+    display: inline-flex;
+    align-items: center;
+    width: auto;
+    list-style: none;
+    cursor: pointer;
+    user-select: none
+}
+
+.report-disclosure summary::-webkit-details-marker {
+    display: none
+}
+
+.report-disclosure form {
+    margin-top: 18px;
+    padding: 18px 0 26px
+}
+
+.report-disclosure label {
+    margin-top: 0
+}
+
+.report-disclosure textarea {
+    min-height: 110px;
+    resize: vertical
+}
+
+.interior-page .comments {
+    max-width: none;
+    min-width: 0;
+    margin-top: 0;
+    padding-top: 34px;
+    padding-left: 42px;
+    border-top: 0 !important;
+    border-left: 4px solid var(--primary)
 }
 
 .interior-page .comments .section-head {
@@ -2116,6 +2191,15 @@ label {
     content: ""
 }
 
+.auth-intro .signup-intro-heading {
+    font-size: clamp(38px, 4vw, 46px)
+}
+
+.signup-intro-heading span {
+    display: block;
+    white-space: nowrap
+}
+
 .auth-intro p {
     margin-top: 22px;
     color: var(--muted)
@@ -2222,6 +2306,23 @@ label {
 }
 
 @media (max-width: 900px) {
+    .detail-layout {
+        grid-template-columns: 1fr;
+        padding-top: 36px !important
+    }
+
+    .detail-column {
+        padding-right: 0
+    }
+
+    .interior-page .comments {
+        margin-top: 36px;
+        padding-top: 30px;
+        padding-left: 38px;
+        border-top: 4px solid var(--primary) !important;
+        border-left: 0
+    }
+
     .combined-poems-layout {
         grid-template-columns: 1fr;
         gap: 28px
@@ -2526,6 +2627,11 @@ label {
         padding-left: 20px
     }
 
+    .report-section {
+        padding-right: 20px;
+        padding-left: 20px
+    }
+
     .interior-page .stats {
         grid-template-columns: 1fr
     }
@@ -2570,6 +2676,10 @@ label {
 
     .auth-intro h1 {
         font-size: 42px
+    }
+
+    .auth-intro .signup-intro-heading {
+        font-size: clamp(32px, 10vw, 42px)
     }
 
     .interior-page .auth-card {
@@ -2700,6 +2810,42 @@ body *, body *::before, body *::after {
     .home-sponsor-sidebar {
         aspect-ratio: 3 / 1
     }
+
+    .trending-grid {
+        grid-template-columns: minmax(0, 1fr);
+        grid-template-rows: none;
+        gap: 0
+    }
+
+    .trending-item {
+        grid-column: 1;
+        grid-row: auto;
+        height: auto;
+        min-height: 190px
+    }
+
+    .trending-rank-1 { grid-row: 1 }
+    .trending-rank-2 { grid-row: 2 }
+    .trending-rank-3 { grid-row: 3 }
+    .trending-rank-4 { grid-row: 4 }
+    .trending-rank-5 { grid-row: 5 }
+
+    .home-sponsor-feed {
+        grid-column: 1;
+        width: 100%;
+        margin-top: 18px;
+        aspect-ratio: 3 / 1
+    }
+
+    .home-sponsor-feed-rank-1-2,
+    .home-sponsor-feed-rank-3-4 {
+        display: none
+    }
+
+    .home-sponsor-feed-rank-5 {
+        grid-row: 6;
+        border-bottom: 3px solid var(--primary)
+    }
 }
 
 @media (max-width: 700px) {
@@ -2722,6 +2868,7 @@ body *, body *::before, body *::after {
     .home-sponsor-feed {
         grid-column: 1;
         grid-row: auto;
+        width: 100%;
         margin-top: 18px;
         aspect-ratio: 3 / 1
     }

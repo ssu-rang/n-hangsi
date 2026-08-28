@@ -6,7 +6,7 @@
 </head>
 <body class="home-page">
 {% include '_header.njk' %}
-<main class="home-container py-4 py-lg-5">
+<main class="home-container">
     {% if accountDeleted %}<div class="alert alert-success" role="status">회원탈퇴가 완료되었습니다.</div>{% endif %}
     <div class="home-layout">
         <aside class="category-sidebar" aria-label="N행시 카테고리">
@@ -40,7 +40,7 @@
                     </div>
                     <aside class="home-house-banner" aria-label="자체 광고 안내">
                         <span class="house-banner-mark">ADVERTISEMENT</span>
-                        <a class="house-banner-content" href="https://github.com/ssu-rang/n-hangsi/blob/main/ADVERTISING.md"><strong><em class="house-banner-initial">광</em>고 자리 비어있습니다<br><em class="house-banner-initial">고</em>민 말고 들어오세요</strong></a>
+                        <a class="house-banner-content" href="/advertising"><strong><em class="house-banner-initial">광</em>고 자리 비어있습니다<br><em class="house-banner-initial">고</em>민 말고 들어오세요</strong></a>
                     </aside>
                 </div>
                 <div class="daily-recommendation">

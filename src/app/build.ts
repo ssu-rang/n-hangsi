@@ -214,6 +214,7 @@ function registerRoutes(
   database: import('node:sqlite').DatabaseSync,
 ): void {
   app.get('/privacy', async (_request, reply) => reply.view('privacy.njk'));
+  app.get('/advertising', async (_request, reply) => reply.view('advertising.njk'));
   registerPoemRoutes(app, database);
   registerReportRoutes(app, database);
   registerUserRoutes(app, database);
