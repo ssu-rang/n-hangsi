@@ -279,6 +279,29 @@ test('Google login, nickname, comment, rating, save and unsave flow', async t =>
   assert.match(response.body, /<details class="report-disclosure">/);
   assert.match(response.body, /<summary class="btn btn-outline-secondary">신고하기<\/summary>/);
   assert.match(response.body, /신고 사유를 구체적으로 적어주세요/);
+  assert.match(response.body, /placeholder="의견을 남겨주세요"/);
+  assert.match(response.body, /class="detail-comment-ad"/);
+  const commentId = response.body.match(new RegExp(`${poemUrl}/comments/(\\d+)`))?.[1];
+  assert.ok(commentId);
+  response = await c.request({
+    method: 'POST',
+    url: `${poemUrl}/comments/${commentId}`,
+    headers,
+    payload: form({ _csrf: authenticatedCsrf, content: '수정한 댓글' }),
+  });
+  assert.equal(response.statusCode, 302);
+  const editedPoemPage = await c.request({ method: 'GET', url: poemUrl });
+  assert.match(editedPoemPage.body, /수정한 댓글/);
+  assert.doesNotMatch(editedPoemPage.body, /좋아요/);
+  const otherMember = await client(app);
+  const otherCsrf = await googleLogin(otherMember, 'other-commenter@example.com', '다른회원');
+  response = await otherMember.request({
+    method: 'POST',
+    url: `${poemUrl}/comments/${commentId}`,
+    headers,
+    payload: form({ _csrf: otherCsrf, content: '남의 댓글 수정' }),
+  });
+  assert.equal(response.statusCode, 403);
   const profileRedirect = await c.request({ method: 'GET', url: '/profile' });
   assert.match(profileRedirect.headers.location ?? '', /^\/users\/\d+$/);
   const profilePage = await c.request({ method: 'GET', url: profileRedirect.headers.location! });

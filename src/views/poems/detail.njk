@@ -25,7 +25,7 @@
         </div>
         {% if currentUser %}
         <div class="detail-actions">
-            <form class="d-inline-flex gap-2" method="post" action="/poems/{{ poem.id }}/ratings">
+            <form class="rating-form" method="post" action="/poems/{{ poem.id }}/ratings">
                 <input type="hidden" name="_csrf" value="{{ csrfToken }}">
                 <label class="visually-hidden" for="score">평점</label>
                 <select id="score" name="score" class="form-select form-select-sm">
@@ -33,7 +33,7 @@
                 </select>
                 <button class="btn btn-sm btn-primary">평가</button>
             </form>
-            <form method="post" action="/poems/{{ poem.id }}/saves">
+            <form class="save-form" method="post" action="/poems/{{ poem.id }}/saves">
                 <input type="hidden" name="_csrf" value="{{ csrfToken }}">
                 {% if poem.saved %}
                 <input type="hidden" name="_method" value="delete">
@@ -70,7 +70,7 @@
             <input type="hidden" name="_csrf" value="{{ csrfToken }}">
             <label class="visually-hidden" for="comment">댓글</label>
             <textarea id="comment" name="content" class="form-control" required maxlength="300"
-                      placeholder="따뜻한 의견을 남겨주세요"></textarea>
+                      placeholder="의견을 남겨주세요"></textarea>
             <button class="btn btn-primary">등록</button>
         </form>
         {% if commentError %}<div class="text-danger small mb-3">{{ commentError }}</div>{% endif %}
@@ -78,9 +78,34 @@
         <p class="mb-4 text-secondary">댓글 작성과 작품 저장은 <a href="/login">로그인</a> 후 이용할 수 있습니다.</p>
         {% endif %}
         {% for comment in comments %}
-        <div class="comment"><strong>{{ comment.authorName }}</strong><p class="mb-0 mt-1">{{ comment.content }}</p></div>
+        <div class="comment">
+            <div class="comment-head">
+                <strong>{{ comment.authorName }}</strong>
+                {% if currentUser and currentUser.id == comment.authorId %}
+                <details class="comment-edit"{% if commentEditId == comment.id %} open{% endif %}>
+                    <summary class="btn btn-outline-secondary btn-sm">수정</summary>
+                    <form method="post" action="/poems/{{ poem.id }}/comments/{{ comment.id }}">
+                        <input type="hidden" name="_csrf" value="{{ csrfToken }}">
+                        <label class="visually-hidden" for="comment-edit-{{ comment.id }}">댓글 수정</label>
+                        <textarea id="comment-edit-{{ comment.id }}" name="content" class="form-control"
+                                  required maxlength="300">{{ comment.content }}</textarea>
+                        {% if commentEditId == comment.id and commentEditError %}
+                        <div class="text-danger small mt-1">{{ commentEditError }}</div>
+                        {% endif %}
+                        <button class="btn btn-primary btn-sm mt-2" type="submit">수정 완료</button>
+                    </form>
+                </details>
+                {% endif %}
+            </div>
+            <p class="mb-0 mt-1">{{ comment.content }}</p>
+        </div>
         {% endfor %}
         {% if not comments.length %}<p class="text-secondary py-4 mb-0">아직 댓글이 없습니다.</p>{% endif %}
+        <aside class="detail-comment-ad" aria-label="광고 영역" data-ad-provider="network"
+               data-ad-slot="poem-detail-comments" data-ad-format="rectangle" data-ad-mobile-format="rectangle">
+            <span class="ad-mark">ADVERTISEMENT</span>
+            <div class="ad-slot-content"></div>
+        </aside>
     </section>
 </main>
 {% include '_footer.njk' %}

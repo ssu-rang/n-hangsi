@@ -11,6 +11,7 @@ import {
   ratePoem,
   savePoem,
   unsavePoem,
+  updateComment,
 } from '../db/poems.js';
 import { bodyOf, numericId, queryOf } from '../shared/request.js';
 import { dailyWord } from './daily-word.js';
@@ -99,6 +100,32 @@ export function registerPoemRoutes(app: FastifyInstance, db: DatabaseSync): void
     }
 
     addComment(db, poemId, content, request.currentUser!);
+    return reply.redirect(`/poems/${poemId}`);
+  });
+
+  app.post('/poems/:id/comments/:commentId', async (request, reply) => {
+    const poemId = numericId(request);
+    const commentId = Number((request.params as { commentId?: string }).commentId);
+    const poemData = getPoem(db, poemId, request.currentUser!.id);
+    if (!poemData || !Number.isInteger(commentId) || commentId < 1) {
+      return reply.view('error/404.njk', {}, 404);
+    }
+
+    const content = String(bodyOf(request).content ?? '').trim();
+    const commentEditError = validateComment(content);
+    if (commentEditError) {
+      return reply.view('poems/detail.njk', {
+        poem: toPoemView(poemData),
+        comments: listComments(db, poemId).map(toCommentView),
+        commentError: null,
+        commentEditError,
+        commentEditId: commentId,
+      });
+    }
+
+    if (!updateComment(db, poemId, commentId, request.currentUser!.id, content)) {
+      return reply.view('error/403.njk', {}, 403);
+    }
     return reply.redirect(`/poems/${poemId}`);
   });
 

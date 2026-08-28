@@ -1243,11 +1243,15 @@ label {
 }
 
 .interior-page.saves-page .explore-grid {
-    border-top: 3px solid #b8b8b8
+    border-top: 3px solid var(--line)
 }
 
 .interior-page.saves-page .explore-grid .poem-card:first-child {
     border-top: 0 !important
+}
+
+.interior-page.saves-page .empty-state {
+    border-top: 0
 }
 
 .interior-page.explore-page main {
@@ -1685,6 +1689,38 @@ label {
     border-top: 2px solid var(--line)
 }
 
+.comment-head {
+    display: flex;
+    align-items: start;
+    justify-content: space-between;
+    gap: 12px
+}
+
+.comment-edit {
+    text-align: right
+}
+
+.comment-edit summary {
+    display: inline-flex;
+    list-style: none;
+    cursor: pointer
+}
+
+.comment-edit summary::-webkit-details-marker {
+    display: none
+}
+
+.comment-edit form {
+    width: min(300px, 70vw);
+    margin-top: 10px;
+    text-align: left
+}
+
+.comment-edit textarea {
+    min-height: 90px;
+    resize: vertical
+}
+
 .interior-page .write-card,
 .interior-page form.write-card {
     margin: 28px auto 0;
@@ -1968,6 +2004,7 @@ label {
 .detail-actions {
     display: flex;
     flex-wrap: wrap;
+    align-items: stretch;
     gap: 10px;
     margin-top: 20px
 }
@@ -1976,10 +2013,32 @@ label {
     margin: 0
 }
 
+.detail-actions .rating-form {
+    display: grid;
+    grid-template-columns: 100px minmax(140px, 1fr);
+    flex: 1;
+    gap: 10px;
+    max-width: 380px
+}
+
+.rating-form .btn {
+    width: 100%;
+    white-space: nowrap
+}
+
+.detail-actions .save-form {
+    margin-left: auto
+}
+
+.save-form .btn {
+    height: 100%;
+    white-space: nowrap
+}
+
 .detail-layout {
     display: grid;
     grid-template-columns: minmax(0, 1.15fr) minmax(340px, .85fr);
-    align-items: start;
+    align-items: stretch;
     max-width: 1180px;
     padding-top: 52px !important
 }
@@ -2038,7 +2097,7 @@ label {
     padding-top: 34px;
     padding-left: 42px;
     border-top: 0 !important;
-    border-left: 4px solid var(--primary)
+    border-left: 3px solid var(--line)
 }
 
 .interior-page .comments .section-head {
@@ -2049,6 +2108,30 @@ label {
 .interior-page .comment-form textarea {
     min-height: 86px;
     resize: vertical
+}
+
+.detail-comment-ad {
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr);
+    width: 100%;
+    aspect-ratio: 1 / 1;
+    margin-top: 36px;
+    background: var(--surface);
+    border: 3px solid var(--line);
+    border-top-color: var(--secondary);
+    border-bottom-color: var(--primary)
+}
+
+.detail-comment-ad .ad-mark {
+    justify-self: start;
+    margin: 12px 12px 0;
+    padding: 2px 5px;
+    background: var(--primary);
+    color: var(--surface);
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: .06em;
+    line-height: 1.4
 }
 
 .profile-stats {
@@ -2319,7 +2402,7 @@ label {
         margin-top: 36px;
         padding-top: 30px;
         padding-left: 38px;
-        border-top: 4px solid var(--primary) !important;
+        border-top: 3px solid var(--line) !important;
         border-left: 0
     }
 

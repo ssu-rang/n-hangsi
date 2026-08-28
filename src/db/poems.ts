@@ -137,6 +137,21 @@ export function addComment(db: DatabaseSync, poemId: number, content: string, us
     .run(poemId, user.id, user.nickname, content);
 }
 
+export function updateComment(
+  db: DatabaseSync,
+  poemId: number,
+  commentId: number,
+  authorId: number,
+  content: string,
+): boolean {
+  const result = db.prepare(`
+    UPDATE comments
+    SET content = ?
+    WHERE id = ? AND poem_id = ? AND author_id = ?
+  `).run(content, commentId, poemId, authorId);
+  return result.changes > 0;
+}
+
 export function savePoem(db: DatabaseSync, poemId: number, userId: number): void {
   db.prepare('INSERT OR IGNORE INTO saved_poems(user_id, poem_id) VALUES (?, ?)').run(userId, poemId);
 }
