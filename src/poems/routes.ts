@@ -80,6 +80,9 @@ export function registerPoemRoutes(app: FastifyInstance, db: DatabaseSync): void
       reportError: null,
       reportSubmitted: queryOf(request).report === 'submitted',
       reportDuplicate: queryOf(request).report === 'duplicate',
+      commentReportSubmitted: queryOf(request).commentReport === 'submitted',
+      commentReportDuplicate: queryOf(request).commentReport === 'duplicate',
+      commentReportId: Number(queryOf(request).commentId) || null,
     });
   });
 

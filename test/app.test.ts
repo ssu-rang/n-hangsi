@@ -278,7 +278,7 @@ test('Google login, nickname, comment, rating, save and unsave flow', async t =>
   response = await c.request({ method: 'GET', url: poemUrl }); assert.match(response.body, /좋아요/); assert.match(response.body, /★ 5/); assert.match(response.body, /bookmark-button is-saved/);
   assert.match(response.body, /aria-label="저장 취소"/);
   assert.match(response.body, /<details class="report-disclosure">/);
-  assert.match(response.body, /<summary class="btn btn-outline-secondary">신고하기<\/summary>/);
+  assert.match(response.body, /class="report-icon-button" aria-label="작품 신고"/);
   assert.match(response.body, /신고 사유를 구체적으로 적어주세요/);
   assert.match(response.body, /placeholder="의견을 남겨주세요"/);
   assert.match(response.body, /class="detail-comment-ad"/);
@@ -624,4 +624,59 @@ test('reports are deduplicated and admin actions are server-authorized', async t
   assert.match(reportsAfterDeletion.body, /삭제된 작품/);
   assert.match(reportsAfterDeletion.body, /바람이/);
   assert.match(reportsAfterDeletion.body, /resolved/);
+});
+
+test('members can report comments once and admins can review and delete them', async t => {
+  const app = await testApp('admin@example.com'); t.after(() => app.close());
+  const member = await client(app);
+  const anonymous = await client(app);
+  const authorCsrf = await googleLogin(member, 'comment-author@example.com', '댓글작성자');
+  let response = await member.request({
+    method: 'POST', url: '/poems', headers,
+    payload: form({ _csrf: authorCsrf, word: '여름', 'lines[0]': '여유로운', 'lines[1]': '름으로 끝난다' }),
+  });
+  const poemUrl = response.headers.location; assert.ok(poemUrl);
+  await member.request({
+    method: 'POST', url: `${poemUrl}/comments`, headers,
+    payload: form({ _csrf: authorCsrf, content: '신고할 댓글' }),
+  });
+  const detail = await member.request({ method: 'GET', url: poemUrl });
+  const commentId = detail.body.match(new RegExp(`${poemUrl}/comments/(\\d+)`))?.[1];
+  assert.ok(commentId);
+  assert.match(detail.body, /aria-label="댓글 신고"/);
+
+  const reporter = await client(app);
+  const reporterCsrf = await googleLogin(reporter, 'comment-reporter@example.com', '신고자');
+  assert.equal((await anonymous.request({
+    method: 'POST', url: `${poemUrl}/comments/${commentId}/reports`,
+    headers, payload: form({ reason: '부적절한 댓글입니다.' }),
+  })).statusCode, 403);
+
+  response = await reporter.request({
+    method: 'POST', url: `${poemUrl}/comments/${commentId}/reports`, headers,
+    payload: form({ _csrf: reporterCsrf, reason: '부적절한 댓글입니다.' }),
+  });
+  assert.equal(response.statusCode, 302);
+  assert.match(response.headers.location ?? '', /commentReport=submitted/);
+
+  response = await reporter.request({
+    method: 'POST', url: `${poemUrl}/comments/${commentId}/reports`, headers,
+    payload: form({ _csrf: reporterCsrf, reason: '중복 신고입니다.' }),
+  });
+  assert.match(response.headers.location ?? '', /commentReport=duplicate/);
+
+  const admin = await client(app);
+  const adminCsrf = await googleLogin(admin, 'admin@example.com', '관리자');
+  response = await admin.request({ method: 'GET', url: '/admin/reports' });
+  assert.match(response.body, /댓글 신고/);
+  assert.match(response.body, /신고할 댓글/);
+  const reportId = response.body.match(/\/admin\/comment-reports\/(\d+)\/delete-comment/)?.[1];
+  assert.ok(reportId);
+
+  response = await admin.request({
+    method: 'POST', url: `/admin/comment-reports/${reportId}/delete-comment`,
+    headers, payload: form({ _csrf: adminCsrf }),
+  });
+  assert.equal(response.statusCode, 302);
+  assert.doesNotMatch((await member.request({ method: 'GET', url: poemUrl })).body, /신고할 댓글/);
 });

@@ -55,7 +55,11 @@
         {% if reportDuplicate %}<div class="alert alert-warning">이미 신고한 작품입니다.</div>{% endif %}
         {% if reportError %}<div class="alert alert-danger">{{ reportError }}</div>{% endif %}
         <details class="report-disclosure"{% if reportError %} open{% endif %}>
-            <summary class="btn btn-outline-secondary">신고하기</summary>
+            <summary class="report-icon-button" aria-label="작품 신고" title="작품 신고">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M9 3h6l1.5 8h-9L9 3Zm-3 9h12v5H6v-5Zm-2 6h16v3H4v-3ZM3 7h3M18 7h3M5 2l2 2m12-2-2 2"/>
+                </svg>
+            </summary>
             <form method="post" action="/poems/{{ poem.id }}/reports">
                 <input type="hidden" name="_csrf" value="{{ csrfToken }}">
                 <label class="form-label" for="report-reason">신고 내용</label>
@@ -82,25 +86,48 @@
         <p class="mb-4 text-secondary">댓글 작성과 작품 저장은 <a href="/login">로그인</a> 후 이용할 수 있습니다.</p>
         {% endif %}
         {% for comment in comments %}
-        <div class="comment">
+        <div class="comment" id="comment-{{ comment.id }}">
             <div class="comment-head">
                 <strong>{{ comment.authorName }}</strong>
-                {% if currentUser and currentUser.id == comment.authorId %}
-                <details class="comment-edit"{% if commentEditId == comment.id %} open{% endif %}>
-                    <summary class="btn btn-outline-secondary btn-sm">수정</summary>
-                    <form method="post" action="/poems/{{ poem.id }}/comments/{{ comment.id }}">
-                        <input type="hidden" name="_csrf" value="{{ csrfToken }}">
-                        <label class="visually-hidden" for="comment-edit-{{ comment.id }}">댓글 수정</label>
-                        <textarea id="comment-edit-{{ comment.id }}" name="content" class="form-control"
-                                  required maxlength="300">{{ comment.content }}</textarea>
-                        {% if commentEditId == comment.id and commentEditError %}
-                        <div class="text-danger small mt-1">{{ commentEditError }}</div>
-                        {% endif %}
-                        <button class="btn btn-primary btn-sm mt-2" type="submit">수정 완료</button>
-                    </form>
-                </details>
+                {% if currentUser %}
+                <div class="comment-actions">
+                    {% if currentUser.id == comment.authorId %}
+                    <details class="comment-edit"{% if commentEditId == comment.id %} open{% endif %}>
+                        <summary class="btn btn-outline-secondary btn-sm">수정</summary>
+                        <form method="post" action="/poems/{{ poem.id }}/comments/{{ comment.id }}">
+                            <input type="hidden" name="_csrf" value="{{ csrfToken }}">
+                            <label class="visually-hidden" for="comment-edit-{{ comment.id }}">댓글 수정</label>
+                            <textarea id="comment-edit-{{ comment.id }}" name="content" class="form-control"
+                                      required maxlength="300">{{ comment.content }}</textarea>
+                            {% if commentEditId == comment.id and commentEditError %}
+                            <div class="text-danger small mt-1">{{ commentEditError }}</div>
+                            {% endif %}
+                            <button class="btn btn-primary btn-sm mt-2" type="submit">수정 완료</button>
+                        </form>
+                    </details>
+                    {% endif %}
+                    <details class="comment-report"{% if commentReportId == comment.id and commentReportError %} open{% endif %}>
+                        <summary class="report-icon-button report-icon-button-small" aria-label="댓글 신고" title="댓글 신고">
+                            <svg viewBox="0 0 24 24" aria-hidden="true">
+                                <path d="M9 3h6l1.5 8h-9L9 3Zm-3 9h12v5H6v-5Zm-2 6h16v3H4v-3ZM3 7h3M18 7h3M5 2l2 2m12-2-2 2"/>
+                            </svg>
+                        </summary>
+                        <form method="post" action="/poems/{{ poem.id }}/comments/{{ comment.id }}/reports">
+                            <input type="hidden" name="_csrf" value="{{ csrfToken }}">
+                            <label class="form-label" for="comment-report-reason-{{ comment.id }}">신고 내용</label>
+                            <textarea id="comment-report-reason-{{ comment.id }}" name="reason" class="form-control"
+                                      minlength="3" maxlength="500" required placeholder="신고 사유를 구체적으로 적어주세요."></textarea>
+                            {% if commentReportId == comment.id and commentReportError %}
+                            <div class="text-danger small mt-1">{{ commentReportError }}</div>
+                            {% endif %}
+                            <button class="btn btn-primary btn-sm mt-2" type="submit">신고 접수</button>
+                        </form>
+                    </details>
+                </div>
                 {% endif %}
             </div>
+            {% if commentReportId == comment.id and commentReportSubmitted %}<div class="alert alert-success py-2 mt-2">댓글 신고가 접수되었습니다.</div>{% endif %}
+            {% if commentReportId == comment.id and commentReportDuplicate %}<div class="alert alert-warning py-2 mt-2">이미 신고한 댓글입니다.</div>{% endif %}
             <p class="mb-0 mt-1">{{ comment.content }}</p>
         </div>
         {% endfor %}

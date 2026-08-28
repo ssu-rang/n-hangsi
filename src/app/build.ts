@@ -31,7 +31,7 @@ const sourceRoot = join(process.cwd(), 'src');
 const protectedPaths = [
   /^\/profile(?:\/|$)/,
   /^\/poems\/\d+\/(comments|saves|ratings|reports)$/,
-  /^\/poems\/\d+\/comments\/\d+$/,
+  /^\/poems\/\d+\/comments\/\d+(?:\/reports)?$/,
 ];
 
 const staticAssets = [
@@ -356,6 +356,9 @@ function rateLimitPolicies(request: import('fastify').FastifyRequest): RateLimit
   }
   if (request.method === 'POST' && /^\/poems\/\d+\/reports$/.test(path)) {
     return [{ key: `report:${actor}`, limit: 10, windowMs: 60 * 60_000 }];
+  }
+  if (request.method === 'POST' && /^\/poems\/\d+\/comments\/\d+\/reports$/.test(path)) {
+    return [{ key: `comment-report:${actor}`, limit: 10, windowMs: 60 * 60_000 }];
   }
   return [];
 }

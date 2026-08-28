@@ -1684,6 +1684,41 @@ label {
     gap: 12px
 }
 
+.comment-actions {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px
+}
+
+.comment-report {
+    position: relative;
+    text-align: right
+}
+
+.comment-report form {
+    position: absolute;
+    z-index: 2;
+    top: 100%;
+    right: 0;
+    width: min(320px, 72vw);
+    margin-top: 8px;
+    padding: 14px;
+    border: 1px solid var(--line);
+    background: #fff;
+    text-align: left
+}
+
+.comment-report textarea {
+    min-height: 88px;
+    resize: vertical
+}
+
+.comment-report form button[type="submit"],
+.report-disclosure form button[type="submit"] {
+    display: block;
+    margin-left: auto
+}
+
 .comment-edit {
     text-align: right
 }
@@ -2087,6 +2122,47 @@ label {
 
 .report-disclosure summary::-webkit-details-marker {
     display: none
+}
+
+.report-icon-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    padding: 8px;
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    background: #fff;
+    color: var(--primary);
+    cursor: pointer
+}
+
+.report-icon-button:hover,
+.report-icon-button:focus-visible {
+    border-color: var(--primary);
+    background: color-mix(in srgb, var(--primary) 8%, white)
+}
+
+.report-icon-button svg {
+    width: 25px;
+    height: 25px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.8;
+    stroke-linecap: round;
+    stroke-linejoin: round
+}
+
+.report-icon-button-small {
+    width: 32px;
+    height: 32px;
+    padding: 5px
+}
+
+.report-icon-button-small svg {
+    width: 20px;
+    height: 20px
 }
 
 .report-disclosure {

@@ -61,9 +61,28 @@ export function createDatabase(filename: string = process.env.DATABASE_PATH || '
       created_at TEXT NOT NULL DEFAULT (datetime('now', 'localtime')),
       UNIQUE(poem_id, reporter_user_id)
     );
+    CREATE TABLE IF NOT EXISTS comment_reports (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      comment_id INTEGER REFERENCES comments(id) ON DELETE SET NULL,
+      reported_comment_id INTEGER NOT NULL,
+      poem_id INTEGER REFERENCES poems(id) ON DELETE SET NULL,
+      reported_poem_id INTEGER NOT NULL,
+      reporter_user_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
+      comment_content TEXT NOT NULL,
+      comment_author_id INTEGER,
+      comment_author_name TEXT,
+      reason TEXT NOT NULL CHECK(length(reason) BETWEEN 3 AND 500),
+      status TEXT NOT NULL DEFAULT 'pending'
+        CHECK(status IN ('pending', 'resolved', 'rejected')),
+      created_at TEXT NOT NULL DEFAULT (datetime('now', 'localtime')),
+      UNIQUE(comment_id, reporter_user_id)
+    );
     CREATE INDEX IF NOT EXISTS idx_reports_status_created
       ON reports(status, created_at DESC, id DESC);
     CREATE INDEX IF NOT EXISTS idx_reports_poem ON reports(poem_id);
+    CREATE INDEX IF NOT EXISTS idx_comment_reports_status_created
+      ON comment_reports(status, created_at DESC, id DESC);
+    CREATE INDEX IF NOT EXISTS idx_comment_reports_comment ON comment_reports(comment_id);
     CREATE INDEX IF NOT EXISTS idx_poems_author ON poems(author_id, created_at DESC);
     CREATE INDEX IF NOT EXISTS idx_comments_poem ON comments(poem_id, created_at);
     CREATE INDEX IF NOT EXISTS idx_saved_user ON saved_poems(user_id, id DESC);

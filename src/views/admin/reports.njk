@@ -36,6 +36,38 @@
         </table>
     </div>
     {% else %}<div class="empty-state"><h2>접수된 신고가 없습니다</h2></div>{% endif %}
+
+    <section class="page-head mt-5"><h2 class="section-title">댓글 신고</h2></section>
+    {% if commentReports.length %}
+    <div class="table-responsive mt-4">
+        <table class="table align-middle">
+            <thead><tr><th>ID</th><th>댓글</th><th>작성자</th><th>신고 사유</th><th>접수 시각</th><th>상태</th><th>처리</th></tr></thead>
+            <tbody>
+            {% for report in commentReports %}
+            <tr>
+                <td>{{ report.id }}</td>
+                <td class="text-break" style="min-width:180px">
+                    <div>{{ report.content }}</div>
+                    {% if report.poemExists %}<a class="small" href="/poems/{{ report.poemId }}#comment-{{ report.commentId }}">작품에서 보기</a>{% endif %}
+                    {% if not report.commentExists %}<span class="text-secondary small"> · 삭제된 댓글</span>{% endif %}
+                </td>
+                <td>{% if report.authorName %}{{ report.authorName }}{% if report.authorId %} (#{{ report.authorId }}){% endif %}{% else %}확인 불가{% endif %}</td>
+                <td class="text-break" style="min-width:180px">{{ report.reason }}</td>
+                <td>{{ report.createdAt }}</td>
+                <td><span class="badge text-bg-{% if report.status == 'pending' %}warning{% elif report.status == 'resolved' %}success{% else %}secondary{% endif %}">{{ report.status }}</span></td>
+                <td>
+                    <div class="d-flex flex-column gap-2" style="min-width:110px">
+                        <form method="post" action="/admin/comment-reports/{{ report.id }}/reject"><input type="hidden" name="_csrf" value="{{ csrfToken }}"><button class="btn btn-sm btn-outline-secondary w-100">유지</button></form>
+                        <form method="post" action="/admin/comment-reports/{{ report.id }}/resolve"><input type="hidden" name="_csrf" value="{{ csrfToken }}"><button class="btn btn-sm btn-outline-primary w-100">처리 완료</button></form>
+                        {% if report.commentExists %}<form method="post" action="/admin/comment-reports/{{ report.id }}/delete-comment"><input type="hidden" name="_csrf" value="{{ csrfToken }}"><button class="btn btn-sm btn-danger w-100">댓글 삭제</button></form>{% endif %}
+                    </div>
+                </td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}<div class="empty-state"><h2>접수된 댓글 신고가 없습니다</h2></div>{% endif %}
 </main>
 {% include '_footer.njk' %}
 </body>

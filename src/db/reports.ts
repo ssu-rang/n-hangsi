@@ -16,6 +16,20 @@ export interface ReportData {
   createdAt: string;
 }
 
+export interface CommentReportData {
+  id: number;
+  commentId: number;
+  commentExists: boolean;
+  poemId: number;
+  poemExists: boolean;
+  content: string;
+  authorId: number | null;
+  authorName: string | null;
+  reason: string;
+  status: 'pending' | ReportStatus;
+  createdAt: string;
+}
+
 interface ReportRow {
   id: number;
   poem_id: number | null;
@@ -39,6 +53,40 @@ export function createReport(db: DatabaseSync, poemId: number, reporterId: numbe
     FROM poems WHERE id = ?
   `).run(reporterId, reason, poemId);
   return result.changes === 1;
+}
+
+export function createCommentReport(
+  db: DatabaseSync,
+  poemId: number,
+  commentId: number,
+  reporterId: number,
+  reason: string,
+): boolean {
+  const result = db.prepare(`
+    INSERT OR IGNORE INTO comment_reports(
+      comment_id, reported_comment_id, poem_id, reported_poem_id, reporter_user_id,
+      comment_content, comment_author_id, comment_author_name, reason
+    )
+    SELECT c.id, c.id, c.poem_id, c.poem_id, ?, c.content, c.author_id, c.author_name, ?
+    FROM comments c WHERE c.id = ? AND c.poem_id = ?
+  `).run(reporterId, reason, commentId, poemId);
+  return result.changes === 1;
+}
+
+export function commentExists(db: DatabaseSync, poemId: number, commentId: number): boolean {
+  return Boolean(db.prepare('SELECT 1 FROM comments WHERE id = ? AND poem_id = ?').get(commentId, poemId));
+}
+
+export function listCommentReports(db: DatabaseSync): CommentReportData[] {
+  return db.prepare(`
+    SELECT cr.id, cr.reported_comment_id commentId, cr.reported_poem_id poemId,
+      cr.comment_content content, cr.comment_author_id authorId,
+      cr.comment_author_name authorName, cr.reason, cr.status, cr.created_at createdAt,
+      cr.comment_id IS NOT NULL commentExists, cr.poem_id IS NOT NULL poemExists
+    FROM comment_reports cr
+    ORDER BY CASE cr.status WHEN 'pending' THEN 0 ELSE 1 END,
+             cr.created_at DESC, cr.id DESC
+  `).all() as unknown as CommentReportData[];
 }
 
 export function listReports(db: DatabaseSync): ReportData[] {
@@ -70,6 +118,27 @@ export function listReports(db: DatabaseSync): ReportData[] {
 
 export function updateReportStatus(db: DatabaseSync, reportId: number, status: ReportStatus): boolean {
   return db.prepare('UPDATE reports SET status = ? WHERE id = ?').run(status, reportId).changes === 1;
+}
+
+export function updateCommentReportStatus(db: DatabaseSync, reportId: number, status: ReportStatus): boolean {
+  return db.prepare('UPDATE comment_reports SET status = ? WHERE id = ?').run(status, reportId).changes === 1;
+}
+
+export function deleteReportedComment(db: DatabaseSync, reportId: number): boolean {
+  const report = db.prepare('SELECT comment_id FROM comment_reports WHERE id = ?')
+    .get(reportId) as unknown as { comment_id: number | null } | undefined;
+  if (!report?.comment_id) return false;
+
+  db.exec('BEGIN IMMEDIATE');
+  try {
+    db.prepare("UPDATE comment_reports SET status = 'resolved' WHERE comment_id = ?").run(report.comment_id);
+    const result = db.prepare('DELETE FROM comments WHERE id = ?').run(report.comment_id);
+    db.exec('COMMIT');
+    return result.changes === 1;
+  } catch (error) {
+    db.exec('ROLLBACK');
+    throw error;
+  }
 }
 
 export function deleteReportedPoem(db: DatabaseSync, reportId: number): boolean {
