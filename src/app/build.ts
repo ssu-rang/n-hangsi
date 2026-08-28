@@ -36,6 +36,12 @@ const protectedPaths = [
 ];
 
 const staticAssets = [
+  [
+    '/naver9e961206c1a4e17f70eaed13312b77dd.html',
+    'naver9e961206c1a4e17f70eaed13312b77dd.html',
+    'text/html; charset=utf-8',
+    'no-cache, must-revalidate',
+  ],
   ['/css/app.css', 'css/app.css', 'text/css; charset=utf-8', 'no-cache, must-revalidate'],
   ['/js/server-app.js', 'js/server-app.js', 'text/javascript; charset=utf-8', 'no-cache, must-revalidate'],
   ['/js/analytics.js', 'js/analytics.js', 'text/javascript; charset=utf-8', 'no-cache, must-revalidate'],

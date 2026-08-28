@@ -272,6 +272,16 @@ test('public pages, poem validation and anonymous creation', async t => {
   const stylesheet = await c.request({ method: 'GET', url: '/css/app.css' });
   assert.equal(stylesheet.headers['content-type'], 'text/css; charset=utf-8');
   assert.equal(stylesheet.headers['cache-control'], 'no-cache, must-revalidate');
+  const naverVerification = await c.request({
+    method: 'GET',
+    url: '/naver9e961206c1a4e17f70eaed13312b77dd.html',
+  });
+  assert.equal(naverVerification.statusCode, 200);
+  assert.equal(naverVerification.headers['content-type'], 'text/html; charset=utf-8');
+  assert.equal(
+    naverVerification.body.trim(),
+    'naver-site-verification: naver9e961206c1a4e17f70eaed13312b77dd.html',
+  );
   const logo = await c.request({ method: 'GET', url: '/images/nhangsi-logo.v1.png' });
   assert.equal(logo.statusCode, 200);
   assert.equal(logo.headers['content-type'], 'image/png');
