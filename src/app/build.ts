@@ -6,15 +6,24 @@ import nunjucks from 'nunjucks';
 import { randomBytes } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
-import { createDatabase } from './db.js';
-import { createEmailSenderFromEnvironment } from './email.js';
-import { bodyOf } from './request.js';
-import { createRepository } from './repository.js';
-import { registerAuthRoutes } from './routes/auth.js';
-import { registerAdminRoutes } from './routes/admin.js';
-import { registerPoemRoutes } from './routes/poems.js';
-import { registerUserRoutes } from './routes/users.js';
-import type { AppOptions, Repository } from './types.js';
+import type { DatabaseSync } from 'node:sqlite';
+import { createDatabase } from '../db/client.js';
+import { bodyOf } from '../shared/request.js';
+import { findUserById } from '../db/users.js';
+import { registerAuthRoutes } from '../auth/routes.js';
+import { registerReportRoutes } from '../reports/routes.js';
+import { registerPoemRoutes } from '../poems/routes.js';
+import { registerUserRoutes } from '../users/routes.js';
+
+export interface AppOptions {
+  logger?: boolean;
+  db?: DatabaseSync;
+  databasePath?: string;
+  sessionSecret?: string;
+  trustProxy?: boolean | string | string[];
+  appBaseUrl?: string;
+  adminEmail?: string;
+}
 
 const sourceRoot = join(process.cwd(), 'src');
 const protectedPaths = [
@@ -29,7 +38,9 @@ const staticAssets = [
 ] as const;
 
 export async function buildApp(options: AppOptions = {}): Promise<FastifyInstance> {
-  const sessionSecret = options.sessionSecret ?? process.env.SESSION_SECRET;
+  const configuredSessionSecret = options.sessionSecret ?? process.env.SESSION_SECRET;
+  const sessionSecret = configuredSessionSecret
+    ?? (isProductionEnvironment() ? undefined : randomBytes(48).toString('base64url'));
   const appBaseUrl = options.appBaseUrl ?? process.env.APP_BASE_URL ?? 'http://localhost:8080';
   ensureConfiguration(sessionSecret, appBaseUrl, Boolean(options.appBaseUrl));
 
@@ -38,17 +49,18 @@ export async function buildApp(options: AppOptions = {}): Promise<FastifyInstanc
     trustProxy: options.trustProxy ?? configuredTrustProxy(),
   });
   const database = options.db ?? createDatabase(options.databasePath ?? process.env.DATABASE_PATH);
-  const repository = createRepository(database);
-  const emailSender = options.emailSender ?? createEmailSenderFromEnvironment();
+  if (!configuredSessionSecret) {
+    app.log.warn('Using an ephemeral development session secret; sessions reset when the server restarts');
+  }
 
   await registerCorePlugins(app, sessionSecret!);
   registerViewRenderer(app);
   registerStaticAssets(app);
-  registerSecurityHooks(app, repository, options.adminEmail ?? process.env.ADMIN_EMAIL);
-  registerRoutes(app, repository, emailSender, appBaseUrl);
+  registerSecurityHooks(app, database, options.adminEmail ?? process.env.ADMIN_EMAIL);
+  registerRoutes(app, database);
   registerErrorHandlers(app);
 
-  app.addHook('onClose', async () => repository.close());
+  app.addHook('onClose', async () => database.close());
   return app;
 }
 
@@ -57,7 +69,7 @@ async function registerCorePlugins(app: FastifyInstance, sessionSecret: string):
   await app.register(session, {
     secret: sessionSecret,
     cookie: {
-      secure: process.env.NODE_ENV === 'production',
+      secure: isProductionEnvironment(),
       httpOnly: true,
       sameSite: 'lax',
       path: '/',
@@ -72,7 +84,7 @@ async function registerCorePlugins(app: FastifyInstance, sessionSecret: string):
 function registerViewRenderer(app: FastifyInstance): void {
   const views = nunjucks.configure(join(sourceRoot, 'views'), {
     autoescape: true,
-    noCache: process.env.NODE_ENV !== 'production',
+    noCache: !isProductionEnvironment(),
   });
 
   app.decorateRequest('currentUser', null);
@@ -115,7 +127,7 @@ function registerStaticAssets(app: FastifyInstance): void {
 
 function registerSecurityHooks(
   app: FastifyInstance,
-  repository: Repository,
+  database: import('node:sqlite').DatabaseSync,
   adminEmail: string | undefined,
 ): void {
   const rateLimiter = new InMemoryRateLimiter();
@@ -124,11 +136,11 @@ function registerSecurityHooks(
 
   app.addHook('preHandler', async request => {
     const userId = request.session.userId;
-    request.currentUser = userId ? repository.findUserById(userId) ?? null : null;
+    request.currentUser = userId ? findUserById(database, userId) ?? null : null;
     request.isAdmin = Boolean(
       request.currentUser
       && adminEmail
-      && request.currentUser.username.toLowerCase() === adminEmail.trim().toLowerCase(),
+      && request.session.userEmail?.toLowerCase() === adminEmail.trim().toLowerCase(),
     );
   });
 
@@ -167,14 +179,12 @@ function registerSecurityHooks(
 
 function registerRoutes(
   app: FastifyInstance,
-  repository: Repository,
-  emailSender: import('./types.js').EmailSender,
-  appBaseUrl: string,
+  database: import('node:sqlite').DatabaseSync,
 ): void {
-  registerPoemRoutes(app, repository);
-  registerAdminRoutes(app, repository);
-  registerUserRoutes(app, repository);
-  registerAuthRoutes(app, repository, emailSender, appBaseUrl);
+  registerPoemRoutes(app, database);
+  registerReportRoutes(app, database);
+  registerUserRoutes(app, database);
+  registerAuthRoutes(app, database);
 }
 
 function registerErrorHandlers(app: FastifyInstance): void {
@@ -225,7 +235,7 @@ function ensureConfiguration(
   if (!['http:', 'https:'].includes(publicUrl.protocol)) {
     throw new Error('APP_BASE_URL must use HTTP or HTTPS');
   }
-  if (process.env.NODE_ENV === 'production') {
+  if (isProductionEnvironment()) {
     if (!process.env.APP_BASE_URL && !appBaseUrlProvidedByOptions) {
       throw new Error('APP_BASE_URL is required in production');
     }
@@ -234,6 +244,9 @@ function ensureConfiguration(
 
   const hasClientId = Boolean(process.env.GOOGLE_CLIENT_ID);
   const hasClientSecret = Boolean(process.env.GOOGLE_CLIENT_SECRET);
+  if (isProductionEnvironment() && (!hasClientId || !hasClientSecret)) {
+    throw new Error('GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET are required in production');
+  }
   if (hasClientId !== hasClientSecret) {
     throw new Error('GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET must be configured together');
   }
@@ -250,9 +263,13 @@ function validateGoogleRedirectUri(value: string): void {
   } catch {
     throw new Error('GOOGLE_REDIRECT_URI must be an absolute URL');
   }
-  if (process.env.NODE_ENV === 'production' && url.protocol !== 'https:') {
+  if (isProductionEnvironment() && url.protocol !== 'https:') {
     throw new Error('GOOGLE_REDIRECT_URI must use HTTPS in production');
   }
+}
+
+function isProductionEnvironment(): boolean {
+  return process.env.NODE_ENV === 'production' || Boolean(process.env.RAILWAY_ENVIRONMENT_ID);
 }
 
 function configuredTrustProxy(): false | string[] {
@@ -271,16 +288,6 @@ function rateLimitPolicies(request: import('fastify').FastifyRequest): RateLimit
   const ip = request.ip;
   const actor = request.currentUser ? `user:${request.currentUser.id}` : `session:${request.session.sessionId}`;
 
-  if (request.method === 'POST' && path === '/login') {
-    const username = String(bodyOf(request).username ?? '').trim().toLowerCase().slice(0, 254);
-    return [
-      { key: `login-ip:${ip}`, limit: 30, windowMs: 15 * 60_000 },
-      { key: `login-account:${ip}:${username}`, limit: 10, windowMs: 15 * 60_000 },
-    ];
-  }
-  if (request.method === 'POST' && path === '/signup') {
-    return [{ key: `signup:${ip}`, limit: 5, windowMs: 60 * 60_000 }];
-  }
   if (request.method === 'GET' && path === '/oauth2/authorization/google') {
     return [{ key: `oauth:${ip}`, limit: 20, windowMs: 15 * 60_000 }];
   }

@@ -1,22 +1,35 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import type { FastifyInstance, InjectOptions } from 'fastify';
-import { buildApp } from '../src/app.js';
-import type { EmailSender } from '../src/types.js';
+import { buildApp } from '../src/app/build.js';
 
 const testSessionSecret = 'test-only-session-secret-0123456789-ABCDEF';
-const sentVerificationUrls: string[] = [];
-const testEmailSender: EmailSender = {
-  async sendVerification(_email, verificationUrl) {
-    sentVerificationUrls.push(verificationUrl);
-  },
+process.env.GOOGLE_CLIENT_ID = 'test-google-client';
+process.env.GOOGLE_CLIENT_SECRET = 'test-google-secret';
+process.env.GOOGLE_REDIRECT_URI = 'http://localhost:8080/login/oauth2/code/google';
+
+let nextGoogleProfile = {
+  sub: 'default-google-user',
+  email: 'default@example.com',
+  email_verified: true,
+  name: '기본 사용자',
+};
+
+globalThis.fetch = async input => {
+  const url = String(input);
+  if (url === 'https://oauth2.googleapis.com/token') {
+    return Response.json({ access_token: 'test-access-token' });
+  }
+  if (url === 'https://openidconnect.googleapis.com/v1/userinfo') {
+    return Response.json(nextGoogleProfile);
+  }
+  throw new Error(`Unexpected fetch: ${url}`);
 };
 
 function testApp(adminEmail?: string) {
   return buildApp({
     databasePath: ':memory:',
     sessionSecret: testSessionSecret,
-    emailSender: testEmailSender,
     appBaseUrl: 'http://localhost:8080',
     ...(adminEmail ? { adminEmail } : {}),
   });
@@ -30,7 +43,7 @@ async function client(app: FastifyInstance) {
     if (setCookie) cookie = (Array.isArray(setCookie) ? setCookie.at(-1) : setCookie)?.split(';')[0] ?? '';
     return response;
   }
-  const page = await request({ method: 'GET', url: '/signup' });
+  const page = await request({ method: 'GET', url: '/poems/new' });
   const csrf = page.body.match(/name="_csrf" value="([^"]+)"/)?.[1];
   assert.ok(csrf);
   return { request, csrf, cookie: () => cookie };
@@ -41,32 +54,34 @@ function form(payload: Record<string, string | undefined>): string {
 }
 const headers = { 'content-type': 'application/x-www-form-urlencoded' };
 
-async function signupAndLogin(
+async function googleLogin(
   c: Awaited<ReturnType<typeof client>>,
   email: string,
   nickname: string,
 ): Promise<string> {
-  let response = await c.request({
-    method: 'POST',
-    url: '/signup',
-    headers,
-    payload: form({
-      _csrf: c.csrf,
-      email,
-      nickname,
-      password: 'password123',
-      passwordConfirm: 'password123',
-    }),
+  nextGoogleProfile = {
+    sub: `google-${email}`,
+    email,
+    email_verified: true,
+    name: nickname,
+  };
+  let response = await c.request({ method: 'GET', url: '/oauth2/authorization/google' });
+  const authorizationUrl = new URL(response.headers.location!);
+  const state = authorizationUrl.searchParams.get('state');
+  assert.ok(state);
+  response = await c.request({
+    method: 'GET',
+    url: `/login/oauth2/code/google?code=test-code&state=${encodeURIComponent(state)}`,
   });
-  assert.equal(response.statusCode, 302);
-  const verificationUrl = new URL(sentVerificationUrls.at(-1)!);
-  response = await c.request({ method: 'GET', url: `${verificationUrl.pathname}${verificationUrl.search}` });
-  assert.equal(response.headers.location, '/login?verified');
+  assert.equal(response.headers.location, '/signup/nickname');
+  const nicknamePage = await c.request({ method: 'GET', url: '/signup/nickname' });
+  const nicknameCsrf = nicknamePage.body.match(/name="_csrf" value="([^"]+)"/)?.[1];
+  assert.ok(nicknameCsrf);
   response = await c.request({
     method: 'POST',
-    url: '/login',
+    url: '/signup/nickname',
     headers,
-    payload: form({ _csrf: c.csrf, username: email, password: 'password123' }),
+    payload: form({ _csrf: nicknameCsrf, nickname }),
   });
   assert.equal(response.headers.location, '/');
   const page = await c.request({ method: 'GET', url: '/poems/new' });
@@ -120,29 +135,25 @@ test('public pages, poem validation and anonymous creation', async t => {
   assert.equal((await c.request({ method: 'GET', url: '/poems/999999' })).statusCode, 404);
 });
 
-test('signup, login, comment, rating, save and unsave flow', async t => {
-  sentVerificationUrls.length = 0;
+test('Google login, nickname, comment, rating, save and unsave flow', async t => {
   const app = await testApp(); t.after(() => app.close());
   const c = await client(app);
-  let response = await c.request({ method: 'POST', url: '/signup', headers, payload: form({ _csrf: c.csrf, email: 'member@example.com', nickname: '회원', password: 'password123', passwordConfirm: 'password123' }) });
-  assert.equal(response.headers.location, '/signup/check-email?email=member%40example.com');
-  assert.equal(sentVerificationUrls.length, 1);
-  const verificationUrl = new URL(sentVerificationUrls[0]!);
-  response = await c.request({ method: 'GET', url: `${verificationUrl.pathname}${verificationUrl.search}` });
-  assert.equal(response.headers.location, '/login?verified');
   const anonymousSessionCookie = c.cookie();
-  response = await c.request({ method: 'POST', url: '/login', headers, payload: form({ _csrf: c.csrf, username: 'member@example.com', password: 'password123' }) }); assert.equal(response.headers.location, '/');
+  const authenticatedCsrf = await googleLogin(c, 'member@example.com', '회원');
   assert.notEqual(c.cookie(), anonymousSessionCookie);
-  const authenticatedPage = await c.request({ method: 'GET', url: '/poems/new' });
-  const authenticatedCsrf = authenticatedPage.body.match(/name="_csrf" value="([^"]+)"/)?.[1];
-  assert.ok(authenticatedCsrf);
-  response = await c.request({ method: 'POST', url: '/poems', headers, payload: form({ _csrf: authenticatedCsrf, word: '사과', 'lines[0]': '사랑하고', 'lines[1]': '과하게 웃자' }) });
+  let response = await c.request({ method: 'POST', url: '/poems', headers, payload: form({ _csrf: authenticatedCsrf, word: '사과', 'lines[0]': '사랑하고', 'lines[1]': '과하게 웃자' }) });
   assert.equal(response.statusCode, 302, response.body);
   const poemUrl = response.headers.location; assert.ok(poemUrl); assert.match(poemUrl, /^\/poems\/\d+$/);
   for (const [suffix, payload] of [['comments', { content: '좋아요' }], ['ratings', { score: '5' }], ['saves', {}]] as const) {
     response = await c.request({ method: 'POST', url: `${poemUrl}/${suffix}`, headers, payload: form({ _csrf: authenticatedCsrf, ...payload }) }); assert.equal(response.statusCode, 302);
   }
   response = await c.request({ method: 'GET', url: poemUrl }); assert.match(response.body, /좋아요/); assert.match(response.body, /★ 5/); assert.match(response.body, /저장 취소/);
+  const profileRedirect = await c.request({ method: 'GET', url: '/profile' });
+  assert.match(profileRedirect.headers.location ?? '', /^\/users\/\d+$/);
+  const profilePage = await c.request({ method: 'GET', url: profileRedirect.headers.location! });
+  assert.equal(profilePage.statusCode, 200); assert.match(profilePage.body, /사과/);
+  const savesPage = await c.request({ method: 'GET', url: '/profile/saves' });
+  assert.equal(savesPage.statusCode, 200); assert.match(savesPage.body, /사과/);
   response = await c.request({ method: 'POST', url: `${poemUrl}/saves`, headers, payload: form({ _csrf: authenticatedCsrf, _method: 'delete' }) }); assert.equal(response.statusCode, 302);
   assert.doesNotMatch((await c.request({ method: 'GET', url: poemUrl })).body, /저장 취소/);
 });
@@ -151,8 +162,37 @@ test('protected routes and csrf are enforced', async t => {
   const app = await testApp(); t.after(() => app.close());
   const c = await client(app);
   assert.equal((await c.request({ method: 'GET', url: '/profile' })).headers.location, '/login');
-  const response = await c.request({ method: 'POST', url: '/signup', headers, payload: form({ email: 'x@example.com' }) });
+  assert.equal((await c.request({ method: 'GET', url: '/signup' })).headers.location, '/login');
+  assert.equal((await c.request({
+    method: 'POST',
+    url: '/login',
+    headers,
+    payload: form({ _csrf: c.csrf }),
+  })).statusCode, 404);
+  const response = await c.request({ method: 'POST', url: '/signup/nickname', headers, payload: form({ nickname: '사용자' }) });
   assert.equal(response.statusCode, 403);
+});
+
+test('Google login rejects an unverified email', async t => {
+  const app = await testApp(); t.after(() => app.close());
+  const c = await client(app);
+  nextGoogleProfile = {
+    sub: 'unverified-google-user',
+    email: 'unverified@example.com',
+    email_verified: false,
+    name: '미인증 사용자',
+  };
+
+  let response = await c.request({ method: 'GET', url: '/oauth2/authorization/google' });
+  const authorizationUrl = new URL(response.headers.location!);
+  const state = authorizationUrl.searchParams.get('state');
+  assert.ok(state);
+  response = await c.request({
+    method: 'GET',
+    url: `/login/oauth2/code/google?code=test-code&state=${encodeURIComponent(state)}`,
+  });
+  assert.equal(response.headers.location, '/login?oauthError');
+  assert.equal((await c.request({ method: 'GET', url: '/signup/nickname' })).headers.location, '/login');
 });
 
 test('configuration rejects weak session secrets', async () => {
@@ -183,13 +223,12 @@ test('anonymous poem creation is rate limited', async t => {
 });
 
 test('reports are deduplicated and admin actions are server-authorized', async t => {
-  sentVerificationUrls.length = 0;
   const app = await testApp('admin@example.com'); t.after(() => app.close());
   const anonymous = await client(app);
   assert.equal((await anonymous.request({ method: 'GET', url: '/admin/reports' })).statusCode, 403);
 
   const member = await client(app);
-  const memberCsrf = await signupAndLogin(member, 'member-report@example.com', '신고자');
+  const memberCsrf = await googleLogin(member, 'member-report@example.com', '신고자');
   let response = await member.request({
     method: 'POST',
     url: '/poems',
@@ -214,7 +253,7 @@ test('reports are deduplicated and admin actions are server-authorized', async t
   assert.equal((await member.request({ method: 'GET', url: '/admin/reports' })).statusCode, 403);
 
   const admin = await client(app);
-  const adminCsrf = await signupAndLogin(admin, 'admin@example.com', '관리자');
+  const adminCsrf = await googleLogin(admin, 'admin@example.com', '관리자');
   response = await admin.request({ method: 'GET', url: '/admin/reports' });
   assert.equal(response.statusCode, 200);
   assert.match(response.body, /부적절한 내용을 포함하고 있습니다/);

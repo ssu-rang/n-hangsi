@@ -9,6 +9,7 @@
         </svg>
         Google로 계속하기
     </a>
-    <div class="auth-divider"><span>또는 이메일로 계속</span></div>
 </div>
+{% else %}
+<div class="alert alert-secondary">Google 로그인 환경변수가 설정되지 않아 현재 로그인할 수 없습니다.</div>
 {% endif %}

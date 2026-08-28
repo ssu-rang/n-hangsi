@@ -1,5 +1,6 @@
 import type { FastifyRequest } from 'fastify';
-import type { Fields } from './types.js';
+
+export type Fields = Record<string, string | undefined>;
 
 export function fields(value: unknown): Fields {
   return value && typeof value === 'object' ? value as Fields : {};
@@ -16,4 +17,3 @@ export function queryOf(request: FastifyRequest): Fields {
 export function numericId(request: FastifyRequest): number {
   return Number(fields(request.params).id);
 }
-

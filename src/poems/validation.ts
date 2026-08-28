@@ -1,26 +1,18 @@
-import type { Fields } from './types.js';
+import type { Fields } from '../shared/request.js';
 
 export interface PoemForm {
   word: string;
   lines: string[];
 }
 
-export interface SignupForm {
-  email: string;
-  nickname: string;
-  password: string;
-  passwordConfirm: string;
-}
-
-export interface ValidationResult<T> {
-  form: T;
+interface ValidationResult {
+  form: PoemForm;
   errors: Record<string, string>;
 }
 
-const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const lineFieldPattern = /^lines\[(\d+)]$/;
 
-export function validatePoem(body: Fields): ValidationResult<PoemForm> {
+export function validatePoem(body: Fields): ValidationResult {
   const word = String(body.word ?? '').trim();
   const characters = [...word];
   const lines = extractLines(body);
@@ -47,23 +39,6 @@ export function validatePoem(body: Fields): ValidationResult<PoemForm> {
   });
 
   return { form: { word, lines }, errors };
-}
-
-export function validateSignup(body: Fields): ValidationResult<SignupForm> {
-  const form = {
-    email: String(body.email ?? '').trim().toLowerCase(),
-    nickname: String(body.nickname ?? '').trim(),
-    password: String(body.password ?? ''),
-    passwordConfirm: String(body.passwordConfirm ?? ''),
-  };
-  const errors: Record<string, string> = {};
-
-  if (!emailPattern.test(form.email)) errors.email = '올바른 이메일을 입력해 주세요.';
-  if ([...form.nickname].length < 2 || [...form.nickname].length > 30) errors.nickname = '닉네임은 2~30자여야 합니다.';
-  if (form.password.length < 8 || form.password.length > 72) errors.password = '비밀번호는 8~72자여야 합니다.';
-  if (form.password !== form.passwordConfirm) errors.passwordConfirm = '비밀번호가 일치하지 않습니다.';
-
-  return { form, errors };
 }
 
 function extractLines(body: Fields): string[] {

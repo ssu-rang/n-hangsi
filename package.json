@@ -5,11 +5,11 @@
   "type": "module",
   "description": "N-hangsi Fastify application",
   "scripts": {
-    "dev": "tsx watch src/server.ts",
+    "dev": "tsx watch src/app/server.ts",
     "build": "tsc -p tsconfig.build.json",
-    "start": "npm run build && node dist/server.js",
-    "start:prod": "node dist/server.js",
-    "start:dev": "tsx src/server.ts",
+    "start": "npm run build && node dist/app/server.js",
+    "start:prod": "node dist/app/server.js",
+    "start:dev": "tsx src/app/server.ts",
     "test:compile": "tsc -p tsconfig.test.json",
     "test": "npm run test:compile && node --test .test-dist/test/*.test.js",
     "typecheck": "tsc --noEmit",
@@ -22,10 +22,7 @@
     "@fastify/cookie": "^11.0.2",
     "@fastify/formbody": "^8.0.2",
     "@fastify/session": "^11.1.1",
-    "@types/nodemailer": "^8.0.1",
-    "bcryptjs": "^3.0.2",
     "fastify": "^5.6.2",
-    "nodemailer": "^9.0.5",
     "nunjucks": "^3.2.4"
   },
   "devDependencies": {

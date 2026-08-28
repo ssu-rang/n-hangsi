@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="ko">
+<head>{% set title='닉네임 설정' %}{% include '_head.njk' %}</head>
+<body class="interior-page auth-page">
+<main class="auth-shell">
+    <section class="auth-intro">
+        <a class="navbar-brand" href="/" aria-label="N행시 홈">
+            <span class="brand-logo-crop"><img class="brand-logo" src="/images/nhangsi-logo.png" alt=""></span>
+        </a>
+        <h1>반가워요<br>이름을 알려주세요</h1>
+    </section>
+    <section class="auth-card">
+        <h2>닉네임 설정</h2>
+        <p class="text-secondary">작품과 댓글에 표시할 닉네임을 입력해 주세요.</p>
+        <form method="post" action="/signup/nickname">
+            <input type="hidden" name="_csrf" value="{{ csrfToken }}">
+            <div class="mb-4">
+                <label class="form-label" for="nickname">닉네임</label>
+                <input class="form-control" id="nickname" name="nickname" type="text"
+                       value="{{ nickname }}" minlength="1" maxlength="30" required autocomplete="nickname">
+                {% if error %}<div class="text-danger small mt-2">닉네임은 1~30자로 입력해 주세요.</div>{% endif %}
+            </div>
+            <button class="btn btn-primary w-100" type="submit">N행시 시작하기</button>
+        </form>
+    </section>
+</main>
+{% include '_footer.njk' %}
+</body>
+</html>
