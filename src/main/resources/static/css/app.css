@@ -1457,6 +1457,124 @@ label {
     color: inherit
 }
 
+.footer-content,
+.footer-links {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px
+}
+
+.footer-content {
+    justify-content: space-between
+}
+
+.footer-links a {
+    color: inherit;
+    text-decoration: underline;
+    text-underline-offset: 3px
+}
+
+.policy-container {
+    width: min(840px, calc(100% - 32px))
+}
+
+.policy-heading {
+    padding-bottom: 28px;
+    border-bottom: 4px solid var(--primary)
+}
+
+.policy-heading h1 {
+    margin: 4px 0 16px;
+    font-size: clamp(38px, 6vw, 58px);
+    font-weight: 750
+}
+
+.policy-heading p {
+    margin-bottom: 0
+}
+
+.policy-heading .policy-date {
+    margin-top: 14px;
+    color: var(--muted);
+    font-size: 13px
+}
+
+.policy-container section {
+    padding: 28px 0;
+    border-bottom: 2px solid var(--line)
+}
+
+.policy-container section h2 {
+    margin: 0 0 14px;
+    font-size: 22px;
+    font-weight: 700
+}
+
+.policy-container section p:last-child,
+.policy-container section ul:last-child {
+    margin-bottom: 0
+}
+
+.policy-container section a {
+    font-weight: 650;
+    text-decoration: underline;
+    text-decoration-color: var(--secondary);
+    text-decoration-thickness: 3px;
+    text-underline-offset: 3px
+}
+
+.analytics-consent {
+    position: fixed;
+    z-index: 1080;
+    right: 20px;
+    bottom: 20px;
+    left: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+    width: min(760px, calc(100% - 40px));
+    margin: 0 auto;
+    padding: 18px 20px;
+    background: var(--surface);
+    border: 3px solid var(--line);
+    border-top-color: var(--secondary);
+    border-bottom-color: var(--primary)
+}
+
+.analytics-consent p {
+    margin: 0;
+    font-size: 14px
+}
+
+.analytics-consent > div {
+    display: flex;
+    align-items: center;
+    flex: none;
+    gap: 8px
+}
+
+.analytics-consent a {
+    margin-right: 4px;
+    font-size: 13px;
+    text-decoration: underline;
+    text-underline-offset: 3px
+}
+
+@media (max-width: 700px) {
+    .analytics-consent {
+        align-items: stretch;
+        flex-direction: column;
+        gap: 12px
+    }
+
+    .analytics-consent > div {
+        justify-content: flex-end;
+        flex-wrap: wrap
+    }
+}
+
 .interior-page .explore-grid {
     grid-template-columns: 1fr;
     gap: 0

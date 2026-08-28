@@ -292,6 +292,38 @@ test('configuration rejects weak session secrets', async () => {
     buildApp({ databasePath: ':memory:', sessionSecret: 'a'.repeat(32) }),
     /at least 12 distinct characters/,
   );
+  await assert.rejects(
+    buildApp({
+      databasePath: ':memory:',
+      sessionSecret: testSessionSecret,
+      posthogKey: 'ph_test',
+      posthogHost: 'http://insecure.example.com',
+    }),
+    /POSTHOG_HOST must use HTTPS/,
+  );
+});
+
+test('PostHog is loaded only when configured and after browser consent', async t => {
+  const app = await buildApp({
+    databasePath: ':memory:',
+    sessionSecret: testSessionSecret,
+    appBaseUrl: 'http://localhost:8080',
+    posthogKey: 'ph_test_public_key',
+    posthogHost: 'https://us.i.posthog.com',
+  });
+  t.after(() => app.close());
+
+  const home = await app.inject({ method: 'GET', url: '/' });
+  assert.match(home.body, /src="\/js\/analytics\.js"/);
+  assert.match(home.body, /data-posthog-key="ph_test_public_key"/);
+  const analytics = await app.inject({ method: 'GET', url: '/js/analytics.js' });
+  assert.equal(analytics.statusCode, 200);
+  assert.match(analytics.body, /consent === "granted"/);
+  assert.match(analytics.body, /autocapture: false/);
+  assert.match(analytics.body, /disable_session_recording: true/);
+  const sdk = await app.inject({ method: 'GET', url: '/js/posthog.js' });
+  assert.equal(sdk.statusCode, 200);
+  assert.match(sdk.headers['content-type'] ?? '', /text\/javascript/);
 });
 
 test('anonymous poem creation is rate limited', async t => {
