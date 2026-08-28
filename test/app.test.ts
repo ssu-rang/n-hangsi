@@ -2,6 +2,9 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import type { FastifyInstance, InjectOptions } from 'fastify';
 import { buildApp } from '../src/app/build.js';
+import { createDatabase } from '../src/db/client.js';
+import { createPoem, listPopularPoems, ratePoem } from '../src/db/poems.js';
+import { createUser } from '../src/db/users.js';
 import { dailyWord, dailyWordCount } from '../src/poems/daily-word.js';
 
 const testSessionSecret = 'test-only-session-secret-0123456789-ABCDEF';
@@ -62,6 +65,34 @@ test('daily words do not repeat before the full rotation', () => {
   assert.equal(dailyWordCount(), 496);
   assert.equal(new Set(words).size, words.length);
   assert.ok(words.every(word => [...word].length >= 2 && [...word].length <= 5));
+});
+
+test('popular poems rank higher ratings before newer low ratings', t => {
+  const db = createDatabase(':memory:'); t.after(() => db.close());
+  const author = createUser(db, {
+    username: 'ranking-author@example.com',
+    nickname: '작성자',
+    provider: 'google',
+    providerUserId: 'ranking-author',
+  });
+  const highRater = createUser(db, {
+    username: 'high-rater@example.com',
+    nickname: '고평가자',
+    provider: 'google',
+    providerUserId: 'high-rater',
+  });
+  const lowRater = createUser(db, {
+    username: 'low-rater@example.com',
+    nickname: '저평가자',
+    provider: 'google',
+    providerUserId: 'low-rater',
+  });
+  const highRatedPoem = createPoem(db, '행복', ['행복한', '복숭아'], author);
+  const newerLowRatedPoem = createPoem(db, '우정', ['우리의', '정다운 날'], author);
+  ratePoem(db, highRatedPoem, highRater.id, 5);
+  ratePoem(db, newerLowRatedPoem, lowRater.id, 1);
+
+  assert.deepEqual(listPopularPoems(db).map(poem => poem.id), [highRatedPoem, newerLowRatedPoem]);
 });
 
 async function googleLogin(

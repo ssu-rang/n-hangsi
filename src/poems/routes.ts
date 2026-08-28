@@ -5,6 +5,7 @@ import {
   createPoem,
   getPoem,
   listComments,
+  listPopularPoems,
   listPoems,
   ratePoem,
   savePoem,
@@ -23,7 +24,7 @@ export function registerPoemRoutes(app: FastifyInstance, db: DatabaseSync): void
     const lineFilter = requestedFilter && validLineFilters.has(requestedFilter) ? requestedFilter : 'all';
     const accountDeleted = 'accountDeleted' in queryOf(request);
     const promptWord = dailyWord();
-    const popularPoems = listPoems(db).map(toPoemView)
+    const popularPoems = listPopularPoems(db).map(toPoemView)
       .filter(poem => matchesLineFilter(poem.word, lineFilter))
       .slice(0, 5);
     const promptPoems = listPoems(db).map(toPoemView)

@@ -58,6 +58,15 @@ export function listPoems(db: DatabaseSync, viewerId: number | null = null): Poe
   return rows.map(row => poemFromRow(db, row, viewerId));
 }
 
+export function listPopularPoems(db: DatabaseSync): PoemData[] {
+  const rows = db.prepare(`
+    ${POEM_QUERY}
+    GROUP BY p.id
+    ORDER BY rating DESC, rating_count DESC, comment_count DESC, p.created_at DESC, p.id DESC
+  `).all() as unknown as PoemRow[];
+  return rows.map(row => poemFromRow(db, row, null));
+}
+
 export function listPoemsByAuthor(db: DatabaseSync, authorId: number): PoemData[] {
   const rows = db.prepare(`
     ${POEM_QUERY}
