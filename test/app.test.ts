@@ -235,6 +235,9 @@ test('public pages, poem validation and anonymous creation', async t => {
 
   const robots = await c.request({ method: 'GET', url: '/robots.txt' });
   assert.equal(robots.statusCode, 200);
+  assert.equal(robots.headers['content-type'], 'text/plain; charset=utf-8');
+  assert.equal(robots.headers['cache-control'], 'no-cache, must-revalidate');
+  assert.match(robots.body, /^User-agent: \*\nAllow: \//);
   assert.match(robots.body, /Sitemap: http:\/\/localhost:8080\/sitemap.xml/);
 
   const sitemap = await c.request({ method: 'GET', url: '/sitemap.xml' });

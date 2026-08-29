@@ -241,6 +241,7 @@ function registerRoutes(
   app.get('/privacy', async (_request, reply) => reply.view('privacy.njk'));
   app.get('/advertising', async (_request, reply) => reply.view('advertising.njk'));
   app.get('/robots.txt', async (_request, reply) => reply
+    .header('Cache-Control', 'no-cache, must-revalidate')
     .type('text/plain; charset=utf-8')
     .send([
       'User-agent: *',
