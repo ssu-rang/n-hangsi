@@ -789,6 +789,10 @@ header .navbar {
     box-shadow: none !important
 }
 
+.trending-item.is-empty:not(.trending-rank-1) {
+    border-top: 3px solid var(--line)
+}
+
 .poem-title-link {
     color: inherit;
     text-decoration: none;

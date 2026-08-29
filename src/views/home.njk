@@ -88,9 +88,10 @@
                 <a href="/poems">전체 보기</a>
             </div>
             <div class="trending-grid">
-                {% for poem in popularPoems %}
-                {% set rank=loop.index %}
-                <div class="trending-item trending-rank-{{ rank }}">
+                {% for rank in [1,2,3,4,5] %}
+                {% set poem=popularPoems[rank - 1] %}
+                <div class="trending-item trending-rank-{{ rank }}{% if not poem %} is-empty{% endif %}"{% if not poem %} aria-hidden="true"{% endif %}>
+                    {% if poem %}
                     <article class="card poem-card h-100">
                         <div class="card-body">
                             <span class="community-rank">#{{ rank }}</span>
@@ -112,6 +113,7 @@
                             </div>
                         </div>
                     </article>
+                    {% endif %}
                 </div>
                 {% endfor %}
                 <aside class="home-sponsor-feed home-sponsor-feed-rank-1-2" data-ad-provider="network" data-ad-slot="home-feed-1" data-ad-format="vertical" data-ad-mobile-format="horizontal">

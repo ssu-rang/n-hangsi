@@ -217,6 +217,7 @@ test('public pages, poem validation and anonymous creation', async t => {
   assert.doesNotMatch(emptyHome.body, />5글자<\/a>/);
   assert.match(emptyHome.body, /href="\/privacy">개인정보처리방침<\/a>/);
   assert.equal(emptyHome.body.match(/class="community-rank"/g)?.length ?? 0, 0);
+  assert.equal(emptyHome.body.match(/class="trending-item trending-rank-\d is-empty" aria-hidden="true"/g)?.length, 5);
   assert.equal(emptyHome.body.match(/class="home-sponsor-sidebar"/g)?.length, 3);
   assert.equal(emptyHome.body.match(/class="home-sponsor-feed home-sponsor-feed-rank-/g)?.length, 3);
   assert.equal(emptyHome.body.match(/class="home-house-banner"/g)?.length, 1);
@@ -257,7 +258,11 @@ test('public pages, poem validation and anonymous creation', async t => {
   assert.equal(response.statusCode, 200); assert.match(response.body, /제시어는 완성된 한글로 입력해 주세요/);
   response = await c.request({ method: 'POST', url: '/poems', headers, payload: form({ _csrf: c.csrf, word: '고양이', 'lines[0]': '고요한 밤', 'lines[1]': '양처럼 포근한', 'lines[2]': '이 시간' }) });
   assert.equal(response.statusCode, 302); const location = response.headers.location; assert.ok(location);
-  response = await c.request({ method: 'GET', url: location }); assert.equal(response.statusCode, 200); assert.match(response.body, /익명/);
+  response = await c.request({ method: 'GET', url: location });
+  assert.equal(response.statusCode, 200);
+  assert.match(response.body, /익명/);
+  assert.match(response.body, /<title>고양이 N행시 - 익명의 작품 \| N행시<\/title>/);
+  assert.match(response.body, /<meta property="og:title" content="고양이 N행시 - 익명의 작품 \| N행시">/);
   for (let index = 0; index < 5; index += 1) {
     response = await c.request({ method: 'POST', url: '/poems', headers, payload: form({ _csrf: c.csrf, word: '사과', 'lines[0]': '사과 한 입', 'lines[1]': '과일 한 조각' }) });
     assert.equal(response.statusCode, 302);
