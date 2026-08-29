@@ -1,7 +1,8 @@
 <!doctype html>
 <html lang="ko">
 <head>
-    {% set title='홈' %}
+    {% set title='N행시 - 매일 새로운 N행시' %}
+    {% set titleIncludesBrand=true %}
     {% include '_head.njk' %}
 </head>
 <body class="home-page">
@@ -14,7 +15,7 @@
             <div class="filter-group">
                 <h3>글자 수</h3>
                 <nav>
-                    {% for value,label in [['all','전체'],['2','2행시'],['3','3행시'],['4','4행시'],['5','5글자']] %}
+                    {% for value,label in [['all','전체'],['2','2행시'],['3','3행시'],['4','4행시'],['5','5행시']] %}
                     <a href="/{% if value != 'all' %}?lines={{ value }}{% endif %}"
                        class="{% if lineFilter == value %}is-active{% endif %}"
                        {% if lineFilter == value %}aria-current="page"{% endif %}>{{ label }}</a>
@@ -74,7 +75,7 @@
                 <div class="filter-group">
                     <h3>글자 수</h3>
                     <nav>
-                        {% for value,label in [['all','전체'],['2','2행시'],['3','3행시'],['4','4행시'],['5','5글자']] %}
+                        {% for value,label in [['all','전체'],['2','2행시'],['3','3행시'],['4','4행시'],['5','5행시']] %}
                         <a href="/{% if value != 'all' %}?lines={{ value }}{% endif %}"
                            class="{% if lineFilter == value %}is-active{% endif %}"
                            {% if lineFilter == value %}aria-current="page"{% endif %}>{{ label }}</a>
@@ -87,14 +88,13 @@
                 <a href="/poems">전체 보기</a>
             </div>
             <div class="trending-grid">
-                {% for rank in [1,2,3,4,5] %}
-                {% set poem=popularPoems[rank - 1] %}
-                <div class="trending-item trending-rank-{{ rank }}{% if not poem %} is-empty{% endif %}">
+                {% for poem in popularPoems %}
+                {% set rank=loop.index %}
+                <div class="trending-item trending-rank-{{ rank }}">
                     <article class="card poem-card h-100">
                         <div class="card-body">
                             <span class="community-rank">#{{ rank }}</span>
                             <div class="community-content">
-                                {% if poem %}
                                 <div class="community-heading">
                                     <h3 class="h4 fw-bold"><a class="poem-title-link" href="/poems/{{ poem.id }}">{{ poem.word }}</a></h3>
                                     {% if rank == 1 %}<span class="hot-label">HOT</span>{% endif %}
@@ -109,9 +109,6 @@
                                     @{{ poem.authorName }} · 평점 {{ poem.rating }} · 댓글 {{ poem.commentCount }}
                                     {% if poem.createdAt %} · {{ poem.createdAt }}{% endif %}
                                 </div>
-                                {% else %}
-                                <p class="popular-slot-empty">인기 작품을 기다리고 있어요.</p>
-                                {% endif %}
                             </div>
                         </div>
                     </article>
