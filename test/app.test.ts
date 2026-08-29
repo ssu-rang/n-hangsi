@@ -220,6 +220,7 @@ test('public pages, poem validation and anonymous creation', async t => {
   assert.equal(emptyHome.body.match(/class="trending-item trending-rank-\d is-empty" aria-hidden="true"/g)?.length, 5);
   assert.equal(emptyHome.body.match(/class="home-sponsor-sidebar"/g)?.length, 3);
   assert.equal(emptyHome.body.match(/class="home-sponsor-feed home-sponsor-feed-rank-/g)?.length, 3);
+  assert.doesNotMatch(emptyHome.body, /home-sponsor-between|home-mobile-between/);
   assert.equal(emptyHome.body.match(/class="home-house-banner"/g)?.length, 1);
   assert.doesNotMatch(emptyHome.body, /home-house-banner"[^>]*data-ad-/);
   assert.match(emptyHome.body, /class="house-banner-content" href="\/advertising"/);

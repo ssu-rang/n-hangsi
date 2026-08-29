@@ -2883,8 +2883,7 @@ body *, body *::before, body *::after {
 /* Home placements use page-specific names to avoid generic cosmetic filters. */
 .home-sponsor-sidebar,
 .home-house-banner,
-.home-sponsor-feed,
-.home-sponsor-between {
+.home-sponsor-feed {
     position: relative;
     display: grid;
     grid-template-rows: auto minmax(0, 1fr);
@@ -2899,8 +2898,7 @@ body *, body *::before, body *::after {
 
 .home-sponsor-sidebar .ad-mark,
 .home-house-banner .house-banner-mark,
-.home-sponsor-feed .ad-mark,
-.home-sponsor-between .ad-mark {
+.home-sponsor-feed .ad-mark {
     position: static;
     justify-self: start;
     margin: 12px 12px 0;
@@ -2985,10 +2983,6 @@ body *, body *::before, body *::after {
     border-bottom: 3px solid var(--primary)
 }
 
-.home-sponsor-between {
-    display: none
-}
-
 @media (max-width: 900px) {
     .home-sponsor-stack {
         grid-column: 1 / -1;
@@ -3045,14 +3039,6 @@ body *, body *::before, body *::after {
 
     .home-house-banner {
         min-height: 0
-    }
-
-    .home-sponsor-between {
-        display: grid;
-        width: 100%;
-        aspect-ratio: 3 / 1;
-        margin: 24px 0;
-        border-bottom-color: var(--primary)
     }
 
     .home-sponsor-feed {
