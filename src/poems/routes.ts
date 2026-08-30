@@ -27,12 +27,21 @@ export function registerPoemRoutes(app: FastifyInstance, db: DatabaseSync): void
     const accountDeleted = 'accountDeleted' in queryOf(request);
     const promptWord = dailyWord();
     const rankedPoems = listPopularPoems(db).map(toPoemView);
+    const latestPoemData = listPoems(db)[0];
+    const latestPoem = latestPoemData ? toPoemView(latestPoemData) : null;
     const popularPoems = listTrendingPoems(db).map(toPoemView)
       .filter(poem => matchesLineFilter(poem.word, lineFilter))
       .slice(0, 5);
     const promptPoems = rankedPoems.filter(poem => poem.word === promptWord);
 
-    return reply.view('home.njk', { accountDeleted, popularPoems, promptPoems, lineFilter, promptWord });
+    return reply.view('home.njk', {
+      accountDeleted,
+      latestPoem,
+      popularPoems,
+      promptPoems,
+      lineFilter,
+      promptWord,
+    });
   });
 
   app.get('/poems', async (request, reply) => {

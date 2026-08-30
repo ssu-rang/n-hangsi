@@ -39,10 +39,28 @@
                                href="/poems/new?word={{ promptWord | urlencode }}">N행시 쓰기</a>
                         </div>
                     </div>
-                    <aside class="home-house-banner" aria-label="자체 광고 안내">
-                        <span class="house-banner-mark">ADVERTISEMENT</span>
-                        <a class="house-banner-content" href="/advertising"><strong><em class="house-banner-initial">광</em>고 자리 비어있습니다<br><em class="house-banner-initial">고</em>민 말고 들어오세요</strong></a>
-                    </aside>
+                    <section class="latest-work" aria-labelledby="latest-work-title">
+                        <div class="latest-work-heading">
+                            <h2 id="latest-work-title">방금 올라온 N행시</h2>
+                            {% if latestPoem %}<span class="line-count">{{ latestPoem.word.length }}행시</span>{% endif %}
+                        </div>
+                        {% if latestPoem %}
+                        <h3><a class="poem-title-link" href="/poems/{{ latestPoem.id }}">{{ latestPoem.word }}</a></h3>
+                        <a class="latest-work-content" href="/poems/{{ latestPoem.id }}" aria-label="{{ latestPoem.word }} 작품 상세 보기">
+                            {% for line in latestPoem.lines %}
+                            <span class="poem-line">
+                                <strong>{{ latestPoem.word[loop.index0] }}</strong><span>{{ line }}</span>
+                            </span>
+                            {% endfor %}
+                        </a>
+                        <div class="meta">
+                            @{{ latestPoem.authorName }} · 평점 {{ latestPoem.rating }} · 댓글 {{ latestPoem.commentCount }}
+                            {% if latestPoem.createdAt %} · {{ latestPoem.createdAt }}{% endif %}
+                        </div>
+                        {% else %}
+                        <p class="text-secondary latest-work-empty">아직 등록된 작품이 없습니다.</p>
+                        {% endif %}
+                    </section>
                 </div>
                 <div class="daily-recommendation">
                     <p class="prompt-work-count">{{ promptPoems.length }}개의 작품이 올라왔어요</p>
@@ -56,7 +74,7 @@
                         </div>
                         {% endfor %}
                         <div class="meta recommendation-meta">
-                            @{{ recommended.authorName }} · ★ {{ recommended.rating }}
+                            @{{ recommended.authorName }} · 평점 {{ recommended.rating }} · 댓글 {{ recommended.commentCount }}
                         </div>
                     </div>
                     {% else %}

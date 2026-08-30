@@ -161,6 +161,10 @@ test('home hero recommends the highest-ranked poem for today\'s word', async t =
   assert.ok(hero);
   assert.match(hero, /인기 작품 첫째 줄/);
   assert.doesNotMatch(hero, /최신 작품 첫째 줄/);
+  const latest = response.body.match(/<section class="latest-work"[\s\S]*?<\/section>/)?.[0];
+  assert.ok(latest);
+  assert.match(latest, /최신 작품 첫째 줄/);
+  assert.doesNotMatch(latest, /인기 작품 첫째 줄/);
 });
 
 async function googleLogin(
@@ -221,9 +225,9 @@ test('public pages, poem validation and anonymous creation', async t => {
   assert.equal(emptyHome.body.match(/class="home-sponsor-sidebar"/g)?.length, 3);
   assert.equal(emptyHome.body.match(/class="home-sponsor-feed home-sponsor-feed-rank-/g)?.length, 3);
   assert.doesNotMatch(emptyHome.body, /home-sponsor-between|home-mobile-between/);
-  assert.equal(emptyHome.body.match(/class="home-house-banner"/g)?.length, 1);
-  assert.doesNotMatch(emptyHome.body, /home-house-banner"[^>]*data-ad-/);
-  assert.match(emptyHome.body, /class="house-banner-content" href="\/advertising"/);
+  assert.equal(emptyHome.body.match(/class="latest-work"/g)?.length, 1);
+  assert.match(emptyHome.body, /방금 올라온 N행시/);
+  assert.doesNotMatch(emptyHome.body, /class="home-house-banner"|광고 자리 비어있습니다/);
   assert.doesNotMatch(emptyHome.body, /popular-slot-empty/);
   assert.equal(emptyHome.headers['cache-control'], 'no-store');
   const privacyPage = await c.request({ method: 'GET', url: '/privacy' });
