@@ -617,9 +617,9 @@ header .navbar {
 
 .latest-work {
     min-width: 0;
-    margin-top: 22px;
-    padding-top: 16px;
-    border-top: 3px solid var(--secondary)
+    margin: 0;
+    padding: 34px 32px 30px;
+    border-left: 3px solid var(--line)
 }
 
 .latest-work-heading {
@@ -670,17 +670,22 @@ header .navbar {
 
 .daily-recommendation {
     display: flex;
+    flex: 1;
     flex-direction: column;
     align-self: stretch;
-    margin: 0;
-    padding: 34px 32px 30px;
-    border-left: 3px solid var(--line)
+    margin: 22px 0 0;
+    padding: 16px 0 0;
+    border-top: 3px solid var(--secondary)
 }
 
 .prompt-work-count {
     margin: 0;
     color: var(--muted);
     font-size: 13px
+}
+
+.daily-prompt .prompt-work-count {
+    margin: 0
 }
 
 .featured-work {
@@ -2707,9 +2712,9 @@ label {
     .daily-recommendation {
         align-self: auto;
         margin: 0;
-        padding: 24px 0 26px;
-        border-top: 3px solid var(--line);
-        border-left: 0
+        margin-top: 22px;
+        padding: 16px 0 0;
+        border-top-color: var(--secondary)
     }
 
     .daily-prompt h1 {
@@ -2721,7 +2726,10 @@ label {
     }
 
     .latest-work {
-        padding-bottom: 4px
+        margin: 0;
+        padding: 24px 0 26px;
+        border-top: 3px solid var(--line);
+        border-left: 0
     }
 
     .hero-ad {

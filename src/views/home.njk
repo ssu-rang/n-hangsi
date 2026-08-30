@@ -39,51 +39,51 @@
                                href="/poems/new?word={{ promptWord | urlencode }}">N행시 쓰기</a>
                         </div>
                     </div>
-                    <section class="latest-work" aria-labelledby="latest-work-title">
-                        <div class="latest-work-heading">
-                            <h2 id="latest-work-title">방금 올라온 N행시</h2>
-                            {% if latestPoem %}<span class="line-count">{{ latestPoem.word.length }}행시</span>{% endif %}
-                        </div>
-                        {% if latestPoem %}
-                        <h3><a class="poem-title-link" href="/poems/{{ latestPoem.id }}">{{ latestPoem.word }}</a></h3>
-                        <a class="latest-work-content" href="/poems/{{ latestPoem.id }}" aria-label="{{ latestPoem.word }} 작품 상세 보기">
-                            {% for line in latestPoem.lines %}
-                            <span class="poem-line">
-                                <strong>{{ latestPoem.word[loop.index0] }}</strong><span>{{ line }}</span>
-                            </span>
+                    <div class="daily-recommendation">
+                        <p class="prompt-work-count">{{ promptPoems.length }}개의 작품이 올라왔어요</p>
+                        {% if promptPoems.length %}
+                        {% set recommended=promptPoems[0] %}
+                        <div class="featured-work">
+                            <div class="featured-work-label">가장 인기 있는 작품</div>
+                            {% for line in recommended.lines %}
+                            <div class="poem-line">
+                                <strong>{{ recommended.word[loop.index0] }}</strong><span>{{ line }}</span>
+                            </div>
                             {% endfor %}
-                        </a>
-                        <div class="meta">
-                            @{{ latestPoem.authorName }} · 평점 {{ latestPoem.rating }} · 댓글 {{ latestPoem.commentCount }}
-                            {% if latestPoem.createdAt %} · {{ latestPoem.createdAt }}{% endif %}
+                            <div class="meta recommendation-meta">
+                                @{{ recommended.authorName }} · 평점 {{ recommended.rating }} · 댓글 {{ recommended.commentCount }}
+                            </div>
                         </div>
                         {% else %}
-                        <p class="text-secondary latest-work-empty">아직 등록된 작품이 없습니다.</p>
+                        <p class="text-secondary featured-work-empty">아직 등록된 작품이 없습니다.</p>
                         {% endif %}
-                    </section>
+                        <a class="prompt-work-link" href="/poems?keyword={{ promptWord | urlencode }}">
+                            {{ promptWord }} 작품 더 보기 →
+                        </a>
+                    </div>
                 </div>
-                <div class="daily-recommendation">
-                    <p class="prompt-work-count">{{ promptPoems.length }}개의 작품이 올라왔어요</p>
-                    {% if promptPoems.length %}
-                    {% set recommended=promptPoems[0] %}
-                    <div class="featured-work">
-                        <div class="featured-work-label">가장 인기 있는 작품</div>
-                        {% for line in recommended.lines %}
-                        <div class="poem-line">
-                            <strong>{{ recommended.word[loop.index0] }}</strong><span>{{ line }}</span>
-                        </div>
+                <section class="latest-work" aria-labelledby="latest-work-title">
+                    <div class="latest-work-heading">
+                        <h2 id="latest-work-title">방금 올라온 N행시</h2>
+                        {% if latestPoem %}<span class="line-count">{{ latestPoem.word.length }}행시</span>{% endif %}
+                    </div>
+                    {% if latestPoem %}
+                    <h3><a class="poem-title-link" href="/poems/{{ latestPoem.id }}">{{ latestPoem.word }}</a></h3>
+                    <a class="latest-work-content" href="/poems/{{ latestPoem.id }}" aria-label="{{ latestPoem.word }} 작품 상세 보기">
+                        {% for line in latestPoem.lines %}
+                        <span class="poem-line">
+                            <strong>{{ latestPoem.word[loop.index0] }}</strong><span>{{ line }}</span>
+                        </span>
                         {% endfor %}
-                        <div class="meta recommendation-meta">
-                            @{{ recommended.authorName }} · 평점 {{ recommended.rating }} · 댓글 {{ recommended.commentCount }}
-                        </div>
+                    </a>
+                    <div class="meta">
+                        @{{ latestPoem.authorName }} · 평점 {{ latestPoem.rating }} · 댓글 {{ latestPoem.commentCount }}
+                        {% if latestPoem.createdAt %} · {{ latestPoem.createdAt }}{% endif %}
                     </div>
                     {% else %}
-                    <p class="text-secondary featured-work-empty">아직 등록된 작품이 없습니다.</p>
+                    <p class="text-secondary latest-work-empty">아직 등록된 작품이 없습니다.</p>
                     {% endif %}
-                    <a class="prompt-work-link" href="/poems?keyword={{ promptWord | urlencode }}">
-                        {{ promptWord }} 작품 더 보기 →
-                    </a>
-                </div>
+                </section>
             </section>
             <section class="mobile-home-category" aria-label="N행시 카테고리">
                 <div class="filter-group">
