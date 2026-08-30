@@ -27,8 +27,7 @@ export function registerPoemRoutes(app: FastifyInstance, db: DatabaseSync): void
     const accountDeleted = 'accountDeleted' in queryOf(request);
     const promptWord = dailyWord();
     const rankedPoems = listPopularPoems(db).map(toPoemView);
-    const latestPoemData = listPoems(db)[0];
-    const latestPoem = latestPoemData ? toPoemView(latestPoemData) : null;
+    const recentWords = [...new Set(listPoems(db).map(poem => poem.word))].slice(0, 15);
     const popularPoems = listTrendingPoems(db).map(toPoemView)
       .filter(poem => matchesLineFilter(poem.word, lineFilter))
       .slice(0, 5);
@@ -36,9 +35,9 @@ export function registerPoemRoutes(app: FastifyInstance, db: DatabaseSync): void
 
     return reply.view('home.njk', {
       accountDeleted,
-      latestPoem,
       popularPoems,
       promptPoems,
+      recentWords,
       lineFilter,
       promptWord,
     });

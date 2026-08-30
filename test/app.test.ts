@@ -147,6 +147,7 @@ test('home hero recommends the highest-ranked poem for today\'s word', async t =
   const word = dailyWord();
   const highRatedPoem = createPoem(db, word, ['인기 작품 첫째 줄', '인기 작품 둘째 줄'], author);
   const newerLowRatedPoem = createPoem(db, word, ['최신 작품 첫째 줄', '최신 작품 둘째 줄'], author);
+  createPoem(db, '새싹', ['새로운', '싹이 나요'], author);
   ratePoem(db, highRatedPoem, highRater.id, 5);
   ratePoem(db, newerLowRatedPoem, lowRater.id, 1);
 
@@ -159,12 +160,16 @@ test('home hero recommends the highest-ranked poem for today\'s word', async t =
   const response = await app.inject({ method: 'GET', url: '/' });
   const hero = response.body.match(/<div class="featured-work">([\s\S]*?)<\/div>\s*<\/div>/)?.[1];
   assert.ok(hero);
+  assert.match(hero, /가장 인기있는 오늘의 N행시/);
+  assert.doesNotMatch(response.body, /개의 작품이 올라왔어요/);
   assert.match(hero, /인기 작품 첫째 줄/);
   assert.doesNotMatch(hero, /최신 작품 첫째 줄/);
-  const latest = response.body.match(/<section class="latest-work"[\s\S]*?<\/section>/)?.[0];
-  assert.ok(latest);
-  assert.match(latest, /최신 작품 첫째 줄/);
-  assert.doesNotMatch(latest, /인기 작품 첫째 줄/);
+  const recentWords = response.body.match(/<section class="recent-words"[\s\S]*?<\/section>/)?.[0];
+  assert.ok(recentWords);
+  assert.match(recentWords, /방금 올라온 단어/);
+  assert.match(recentWords, /href="\/poems\/new\?word=%EC%83%88%EC%8B%B9">새싹<\/a>/);
+  assert.doesNotMatch(recentWords, /새로운|싹이 나요/);
+  assert.equal(recentWords.match(new RegExp(`>${word}<\\/a>`, 'g'))?.length, 1);
 });
 
 async function googleLogin(
@@ -225,8 +230,8 @@ test('public pages, poem validation and anonymous creation', async t => {
   assert.equal(emptyHome.body.match(/class="home-sponsor-sidebar"/g)?.length, 3);
   assert.equal(emptyHome.body.match(/class="home-sponsor-feed home-sponsor-feed-rank-/g)?.length, 3);
   assert.doesNotMatch(emptyHome.body, /home-sponsor-between|home-mobile-between/);
-  assert.equal(emptyHome.body.match(/class="latest-work"/g)?.length, 1);
-  assert.match(emptyHome.body, /방금 올라온 N행시/);
+  assert.equal(emptyHome.body.match(/class="recent-words"/g)?.length, 1);
+  assert.match(emptyHome.body, /방금 올라온 단어/);
   assert.doesNotMatch(emptyHome.body, /class="home-house-banner"|광고 자리 비어있습니다/);
   assert.doesNotMatch(emptyHome.body, /popular-slot-empty/);
   assert.equal(emptyHome.headers['cache-control'], 'no-store');

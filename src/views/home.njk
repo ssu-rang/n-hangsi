@@ -40,11 +40,10 @@
                         </div>
                     </div>
                     <div class="daily-recommendation">
-                        <p class="prompt-work-count">{{ promptPoems.length }}개의 작품이 올라왔어요</p>
                         {% if promptPoems.length %}
                         {% set recommended=promptPoems[0] %}
                         <div class="featured-work">
-                            <div class="featured-work-label">가장 인기 있는 작품</div>
+                            <div class="featured-work-label">가장 인기있는 오늘의 N행시</div>
                             {% for line in recommended.lines %}
                             <div class="poem-line">
                                 <strong>{{ recommended.word[loop.index0] }}</strong><span>{{ line }}</span>
@@ -62,26 +61,18 @@
                         </a>
                     </div>
                 </div>
-                <section class="latest-work" aria-labelledby="latest-work-title">
-                    <div class="latest-work-heading">
-                        <h2 id="latest-work-title">방금 올라온 N행시</h2>
-                        {% if latestPoem %}<span class="line-count">{{ latestPoem.word.length }}행시</span>{% endif %}
+                <section class="recent-words" aria-labelledby="recent-words-title">
+                    <div class="recent-words-heading">
+                        <h2 id="recent-words-title">방금 올라온 단어</h2>
                     </div>
-                    {% if latestPoem %}
-                    <h3><a class="poem-title-link" href="/poems/{{ latestPoem.id }}">{{ latestPoem.word }}</a></h3>
-                    <a class="latest-work-content" href="/poems/{{ latestPoem.id }}" aria-label="{{ latestPoem.word }} 작품 상세 보기">
-                        {% for line in latestPoem.lines %}
-                        <span class="poem-line">
-                            <strong>{{ latestPoem.word[loop.index0] }}</strong><span>{{ line }}</span>
-                        </span>
+                    {% if recentWords.length %}
+                    <nav class="recent-word-list" aria-label="최근 N행시 단어로 글쓰기">
+                        {% for word in recentWords %}
+                        <a class="recent-word-link" href="/poems/new?word={{ word | urlencode }}">{{ word }}</a>
                         {% endfor %}
-                    </a>
-                    <div class="meta">
-                        @{{ latestPoem.authorName }} · 평점 {{ latestPoem.rating }} · 댓글 {{ latestPoem.commentCount }}
-                        {% if latestPoem.createdAt %} · {{ latestPoem.createdAt }}{% endif %}
-                    </div>
+                    </nav>
                     {% else %}
-                    <p class="text-secondary latest-work-empty">아직 등록된 작품이 없습니다.</p>
+                    <p class="text-secondary recent-words-empty">아직 등록된 단어가 없습니다.</p>
                     {% endif %}
                 </section>
             </section>
