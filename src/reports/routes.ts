@@ -13,6 +13,7 @@ import {
   updateReportStatus,
 } from '../db/reports.js';
 import { toCommentView, toPoemView } from '../poems/view.js';
+import { formatKoreaDateTime } from '../shared/date-time.js';
 import { bodyOf, numericId } from '../shared/request.js';
 
 export function registerReportRoutes(app: FastifyInstance, db: DatabaseSync): void {
@@ -70,11 +71,11 @@ export function registerReportRoutes(app: FastifyInstance, db: DatabaseSync): vo
     return reply.view('admin/reports.njk', {
       reports: listReports(db).map(report => ({
         ...report,
-        createdAt: formatDateTime(report.createdAt),
+        createdAt: formatKoreaDateTime(report.createdAt),
       })),
       commentReports: listCommentReports(db).map(report => ({
         ...report,
-        createdAt: formatDateTime(report.createdAt),
+        createdAt: formatKoreaDateTime(report.createdAt),
       })),
     });
   });
@@ -120,8 +121,4 @@ function validateReportReason(reason: string): string | null {
   if ([...reason].length < 3) return '신고 사유를 3자 이상 입력해 주세요.';
   if ([...reason].length > 500) return '신고 사유는 500자 이하여야 합니다.';
   return null;
-}
-
-function formatDateTime(value: string): string {
-  return value.slice(0, 16).replaceAll('-', '.').replace('T', ' ');
 }

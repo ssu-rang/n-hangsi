@@ -2,6 +2,8 @@ import { DatabaseSync } from 'node:sqlite';
 import { mkdirSync } from 'node:fs';
 import { dirname } from 'node:path';
 
+const UTC_TIMESTAMPS_MIGRATION = 'utc-timestamps-v1';
+
 export function createDatabase(filename: string = process.env.DATABASE_PATH || 'data/nhangsi.sqlite'): DatabaseSync {
   if (filename !== ':memory:') mkdirSync(dirname(filename), { recursive: true });
   const db = new DatabaseSync(filename);
@@ -23,7 +25,7 @@ export function createDatabase(filename: string = process.env.DATABASE_PATH || '
       lines_text TEXT NOT NULL,
       author_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
       author_name TEXT NOT NULL DEFAULT '익명',
-      created_at TEXT NOT NULL DEFAULT (datetime('now', 'localtime'))
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
     );
     CREATE TABLE IF NOT EXISTS comments (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -31,7 +33,7 @@ export function createDatabase(filename: string = process.env.DATABASE_PATH || '
       author_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
       author_name TEXT NOT NULL,
       content TEXT NOT NULL,
-      created_at TEXT NOT NULL DEFAULT (datetime('now', 'localtime'))
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
     );
     CREATE TABLE IF NOT EXISTS saved_poems (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -58,7 +60,7 @@ export function createDatabase(filename: string = process.env.DATABASE_PATH || '
       reason TEXT NOT NULL CHECK(length(reason) BETWEEN 3 AND 500),
       status TEXT NOT NULL DEFAULT 'pending'
         CHECK(status IN ('pending', 'resolved', 'rejected')),
-      created_at TEXT NOT NULL DEFAULT (datetime('now', 'localtime')),
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
       UNIQUE(poem_id, reporter_user_id)
     );
     CREATE TABLE IF NOT EXISTS comment_reports (
@@ -74,8 +76,12 @@ export function createDatabase(filename: string = process.env.DATABASE_PATH || '
       reason TEXT NOT NULL CHECK(length(reason) BETWEEN 3 AND 500),
       status TEXT NOT NULL DEFAULT 'pending'
         CHECK(status IN ('pending', 'resolved', 'rejected')),
-      created_at TEXT NOT NULL DEFAULT (datetime('now', 'localtime')),
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
       UNIQUE(comment_id, reporter_user_id)
+    );
+    CREATE TABLE IF NOT EXISTS app_metadata (
+      key TEXT PRIMARY KEY,
+      value TEXT NOT NULL
     );
     CREATE INDEX IF NOT EXISTS idx_reports_status_created
       ON reports(status, created_at DESC, id DESC);
@@ -92,7 +98,27 @@ export function createDatabase(filename: string = process.env.DATABASE_PATH || '
   ensureColumn(db, 'reports', 'poem_lines_text', 'TEXT');
   ensureColumn(db, 'reports', 'poem_author_id', 'INTEGER');
   ensureColumn(db, 'reports', 'poem_author_name', 'TEXT');
+  migrateTimestampsToUtc(db);
   return db;
+}
+
+function migrateTimestampsToUtc(database: DatabaseSync): void {
+  const migrated = database.prepare('SELECT 1 FROM app_metadata WHERE key = ?')
+    .get(UTC_TIMESTAMPS_MIGRATION);
+  if (migrated) return;
+
+  database.exec('BEGIN IMMEDIATE');
+  try {
+    for (const table of ['poems', 'comments', 'reports', 'comment_reports']) {
+      database.exec(`UPDATE ${table} SET created_at = datetime(created_at, 'utc')`);
+    }
+    database.prepare('INSERT INTO app_metadata(key, value) VALUES (?, ?)')
+      .run(UTC_TIMESTAMPS_MIGRATION, new Date().toISOString());
+    database.exec('COMMIT');
+  } catch (error) {
+    database.exec('ROLLBACK');
+    throw error;
+  }
 }
 
 function ensureColumn(database: DatabaseSync, table: string, column: string, definition: string): void {

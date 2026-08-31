@@ -115,7 +115,7 @@ export function getPoem(
 
 export function createPoem(db: DatabaseSync, word: string, lines: string[], user: User | null): number {
   const result = db
-    .prepare('INSERT INTO poems(word, lines_text, author_id, author_name) VALUES (?, ?, ?, ?)')
+    .prepare("INSERT INTO poems(word, lines_text, author_id, author_name, created_at) VALUES (?, ?, ?, ?, datetime('now'))")
     .run(word, lines.join(LINE_SEPARATOR), user?.id ?? null, user?.nickname ?? '익명');
   return Number(result.lastInsertRowid);
 }
@@ -133,7 +133,7 @@ export function listComments(db: DatabaseSync, poemId: number): CommentData[] {
 }
 
 export function addComment(db: DatabaseSync, poemId: number, content: string, user: User): void {
-  db.prepare('INSERT INTO comments(poem_id, author_id, author_name, content) VALUES (?, ?, ?, ?)')
+  db.prepare("INSERT INTO comments(poem_id, author_id, author_name, content, created_at) VALUES (?, ?, ?, ?, datetime('now'))")
     .run(poemId, user.id, user.nickname, content);
 }
 
