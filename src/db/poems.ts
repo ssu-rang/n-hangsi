@@ -26,7 +26,7 @@ export interface PoemData {
 
 export interface CommentData {
   id: number;
-  authorId: number;
+  authorId: number | null;
   authorName: string;
   content: string;
   createdAt: string | null;
@@ -46,7 +46,7 @@ interface PoemRow {
 
 interface CommentRow {
   id: number;
-  author_id: number;
+  author_id: number | null;
   author_name: string;
   content: string;
   created_at: string;
@@ -132,9 +132,9 @@ export function listComments(db: DatabaseSync, poemId: number): CommentData[] {
   }));
 }
 
-export function addComment(db: DatabaseSync, poemId: number, content: string, user: User): void {
+export function addComment(db: DatabaseSync, poemId: number, content: string, user: User | null): void {
   db.prepare("INSERT INTO comments(poem_id, author_id, author_name, content, created_at) VALUES (?, ?, ?, ?, datetime('now'))")
-    .run(poemId, user.id, user.nickname, content);
+    .run(poemId, user?.id ?? null, user?.nickname ?? '익명', content);
 }
 
 export function updateComment(
@@ -160,11 +160,25 @@ export function unsavePoem(db: DatabaseSync, poemId: number, userId: number): vo
   db.prepare('DELETE FROM saved_poems WHERE user_id = ? AND poem_id = ?').run(userId, poemId);
 }
 
-export function ratePoem(db: DatabaseSync, poemId: number, userId: number, score: number): void {
+export function ratePoem(
+  db: DatabaseSync,
+  poemId: number,
+  userId: number | null,
+  score: number,
+  visitorId: string | null = null,
+): void {
+  if (userId !== null) {
+    db.prepare(`
+      INSERT INTO ratings(user_id, visitor_id, poem_id, score) VALUES (?, NULL, ?, ?)
+      ON CONFLICT(user_id, poem_id) DO UPDATE SET score = excluded.score
+    `).run(userId, poemId, score);
+    return;
+  }
+
   db.prepare(`
-    INSERT INTO ratings(user_id, poem_id, score) VALUES (?, ?, ?)
-    ON CONFLICT(user_id, poem_id) DO UPDATE SET score = excluded.score
-  `).run(userId, poemId, score);
+    INSERT INTO ratings(user_id, visitor_id, poem_id, score) VALUES (NULL, ?, ?, ?)
+    ON CONFLICT(visitor_id, poem_id) DO UPDATE SET score = excluded.score
+  `).run(visitorId, poemId, score);
 }
 
 function poemFromRow(

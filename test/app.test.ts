@@ -274,8 +274,56 @@ test('public pages, poem validation and anonymous creation', async t => {
   response = await c.request({ method: 'GET', url: location });
   assert.equal(response.statusCode, 200);
   assert.match(response.body, /익명/);
+  assert.match(response.body, /action="[^\"]+\/ratings"/);
+  assert.match(response.body, /action="[^\"]+\/comments"/);
   assert.match(response.body, /<title>고양이 N행시 - 익명의 작품 \| N행시<\/title>/);
   assert.match(response.body, /<meta property="og:title" content="고양이 N행시 - 익명의 작품 \| N행시">/);
+  response = await c.request({
+    method: 'POST', url: `${location}/comments`, headers,
+    payload: form({ _csrf: c.csrf, content: '비회원 댓글' }),
+  });
+  assert.equal(response.statusCode, 302);
+  response = await c.request({
+    method: 'POST', url: `${location}/ratings`, headers,
+    payload: form({ _csrf: c.csrf, score: '5' }),
+  });
+  assert.equal(response.statusCode, 302);
+  response = await c.request({
+    method: 'POST', url: `${location}/ratings`, headers,
+    payload: form({ _csrf: c.csrf, score: '2' }),
+  });
+  assert.equal(response.statusCode, 302);
+  const anonymouslyRated = await c.request({ method: 'GET', url: location });
+  assert.match(anonymouslyRated.body, /비회원 댓글/);
+  assert.match(anonymouslyRated.body, /★ 2/);
+  assert.match(anonymouslyRated.body, /평가 1/);
+  const anonymousCommentId = anonymouslyRated.body.match(/comments\/(\d+)\/reports/)?.[1];
+  assert.ok(anonymousCommentId);
+  response = await c.request({
+    method: 'POST', url: `${location}/reports`, headers,
+    payload: form({ _csrf: c.csrf, reason: '익명 작품 신고입니다.' }),
+  });
+  assert.equal(response.headers.location, `${location}?report=submitted`);
+  response = await c.request({
+    method: 'POST', url: `${location}/reports`, headers,
+    payload: form({ _csrf: c.csrf, reason: '익명 작품 중복 신고입니다.' }),
+  });
+  assert.equal(response.headers.location, `${location}?report=duplicate`);
+  response = await c.request({
+    method: 'POST', url: `${location}/comments/${anonymousCommentId}/reports`, headers,
+    payload: form({ _csrf: c.csrf, reason: '익명 댓글 신고입니다.' }),
+  });
+  assert.match(response.headers.location ?? '', /commentReport=submitted/);
+  response = await c.request({
+    method: 'POST', url: `${location}/comments/${anonymousCommentId}/reports`, headers,
+    payload: form({ _csrf: c.csrf, reason: '익명 댓글 중복 신고입니다.' }),
+  });
+  assert.match(response.headers.location ?? '', /commentReport=duplicate/);
+  assert.equal((await c.request({
+    method: 'POST', url: `${location}/saves`, headers,
+    payload: form({ _csrf: c.csrf }),
+  })).headers.location, '/login');
+  assert.equal((await c.request({ method: 'GET', url: '/profile' })).headers.location, '/login');
   for (let index = 0; index < 5; index += 1) {
     response = await c.request({ method: 'POST', url: '/poems', headers, payload: form({ _csrf: c.csrf, word: '사과', 'lines[0]': '사과 한 입', 'lines[1]': '과일 한 조각' }) });
     assert.equal(response.statusCode, 302);
@@ -594,6 +642,34 @@ test('anonymous poem creation is also rate limited by IP across sessions', async
       url: '/poems',
       headers,
       payload: form({ _csrf: c.csrf }),
+    });
+  }
+
+  assert.equal(response!.statusCode, 429);
+  assert.ok(Number(response!.headers['retry-after']) > 0);
+});
+
+test('anonymous reports are rate limited by IP across sessions', async t => {
+  const app = await testApp(); t.after(() => app.close());
+  const author = await client(app);
+  const created = await author.request({
+    method: 'POST', url: '/poems', headers,
+    payload: form({
+      _csrf: author.csrf,
+      word: '신고',
+      'lines[0]': '신중하게',
+      'lines[1]': '고른 작품',
+    }),
+  });
+  const poemUrl = created.headers.location;
+  assert.ok(poemUrl);
+  let response;
+
+  for (let attempt = 0; attempt < 31; attempt += 1) {
+    const reporter = await client(app);
+    response = await reporter.request({
+      method: 'POST', url: `${poemUrl}/reports`, headers,
+      payload: form({ _csrf: reporter.csrf, reason: `익명 신고 ${attempt}입니다.` }),
     });
   }
 

@@ -43,15 +43,21 @@ interface ReportRow {
   created_at: string;
 }
 
-export function createReport(db: DatabaseSync, poemId: number, reporterId: number, reason: string): boolean {
+export function createReport(
+  db: DatabaseSync,
+  poemId: number,
+  reporterId: number | null,
+  visitorId: string | null,
+  reason: string,
+): boolean {
   const result = db.prepare(`
     INSERT OR IGNORE INTO reports(
-      poem_id, reported_poem_id, reporter_user_id,
+      poem_id, reported_poem_id, reporter_user_id, reporter_visitor_id,
       poem_word, poem_lines_text, poem_author_id, poem_author_name, reason, created_at
     )
-    SELECT id, id, ?, word, lines_text, author_id, author_name, ?, datetime('now')
+    SELECT id, id, ?, ?, word, lines_text, author_id, author_name, ?, datetime('now')
     FROM poems WHERE id = ?
-  `).run(reporterId, reason, poemId);
+  `).run(reporterId, visitorId, reason, poemId);
   return result.changes === 1;
 }
 
@@ -59,17 +65,18 @@ export function createCommentReport(
   db: DatabaseSync,
   poemId: number,
   commentId: number,
-  reporterId: number,
+  reporterId: number | null,
+  visitorId: string | null,
   reason: string,
 ): boolean {
   const result = db.prepare(`
     INSERT OR IGNORE INTO comment_reports(
-      comment_id, reported_comment_id, poem_id, reported_poem_id, reporter_user_id,
+      comment_id, reported_comment_id, poem_id, reported_poem_id, reporter_user_id, reporter_visitor_id,
       comment_content, comment_author_id, comment_author_name, reason, created_at
     )
-    SELECT c.id, c.id, c.poem_id, c.poem_id, ?, c.content, c.author_id, c.author_name, ?, datetime('now')
+    SELECT c.id, c.id, c.poem_id, c.poem_id, ?, ?, c.content, c.author_id, c.author_name, ?, datetime('now')
     FROM comments c WHERE c.id = ? AND c.poem_id = ?
-  `).run(reporterId, reason, commentId, poemId);
+  `).run(reporterId, visitorId, reason, commentId, poemId);
   return result.changes === 1;
 }
 

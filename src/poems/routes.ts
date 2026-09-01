@@ -100,7 +100,7 @@ export function registerPoemRoutes(app: FastifyInstance, db: DatabaseSync): void
 
   app.post('/poems/:id/comments', async (request, reply) => {
     const poemId = numericId(request);
-    const poemData = getPoem(db, poemId, request.currentUser!.id);
+    const poemData = getPoem(db, poemId, request.currentUser?.id);
     if (!poemData) return reply.view('error/404.njk', {}, 404);
     const poem = toPoemView(poemData);
 
@@ -114,7 +114,7 @@ export function registerPoemRoutes(app: FastifyInstance, db: DatabaseSync): void
       });
     }
 
-    addComment(db, poemId, content, request.currentUser!);
+    addComment(db, poemId, content, request.currentUser);
     return reply.redirect(`/poems/${poemId}`);
   });
 
@@ -168,7 +168,13 @@ export function registerPoemRoutes(app: FastifyInstance, db: DatabaseSync): void
     if (!getPoem(db, poemId)) return reply.view('error/404.njk', {}, 404);
     if (!Number.isInteger(score) || score < 1 || score > 5) return reply.view('error/400.njk', {}, 400);
 
-    ratePoem(db, poemId, request.currentUser!.id, score);
+    ratePoem(
+      db,
+      poemId,
+      request.currentUser?.id ?? null,
+      score,
+      request.currentUser ? null : request.session.sessionId,
+    );
     return reply.redirect(`/poems/${poemId}`);
   });
 }

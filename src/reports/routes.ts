@@ -19,7 +19,7 @@ import { bodyOf, numericId } from '../shared/request.js';
 export function registerReportRoutes(app: FastifyInstance, db: DatabaseSync): void {
   app.post('/poems/:id/reports', async (request, reply) => {
     const poemId = numericId(request);
-    const poemData = getPoem(db, poemId, request.currentUser!.id);
+    const poemData = getPoem(db, poemId, request.currentUser?.id);
     if (!poemData) return reply.view('error/404.njk', {}, 404);
     const poem = toPoemView(poemData);
 
@@ -36,7 +36,13 @@ export function registerReportRoutes(app: FastifyInstance, db: DatabaseSync): vo
       }, 400);
     }
 
-    const outcome = createReport(db, poemId, request.currentUser!.id, reason) ? 'submitted' : 'duplicate';
+    const outcome = createReport(
+      db,
+      poemId,
+      request.currentUser?.id ?? null,
+      request.currentUser ? null : request.session.sessionId,
+      reason,
+    ) ? 'submitted' : 'duplicate';
     return reply.redirect(`/poems/${poemId}?report=${outcome}`);
   });
 
@@ -50,7 +56,7 @@ export function registerReportRoutes(app: FastifyInstance, db: DatabaseSync): vo
     const reason = String(bodyOf(request).reason ?? '').trim();
     const reportError = validateReportReason(reason);
     if (reportError) {
-      const poemData = getPoem(db, poemId, request.currentUser!.id);
+      const poemData = getPoem(db, poemId, request.currentUser?.id);
       if (!poemData) return reply.view('error/404.njk', {}, 404);
       return reply.view('poems/detail.njk', {
         poem: toPoemView(poemData),
@@ -62,7 +68,14 @@ export function registerReportRoutes(app: FastifyInstance, db: DatabaseSync): vo
       }, 400);
     }
 
-    const outcome = createCommentReport(db, poemId, commentId, request.currentUser!.id, reason)
+    const outcome = createCommentReport(
+      db,
+      poemId,
+      commentId,
+      request.currentUser?.id ?? null,
+      request.currentUser ? null : request.session.sessionId,
+      reason,
+    )
       ? 'submitted' : 'duplicate';
     return reply.redirect(`/poems/${poemId}?commentReport=${outcome}&commentId=${commentId}#comment-${commentId}`);
   });

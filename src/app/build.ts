@@ -31,8 +31,8 @@ export interface AppOptions {
 const sourceRoot = join(process.cwd(), 'src');
 const protectedPaths = [
   /^\/profile(?:\/|$)/,
-  /^\/poems\/\d+\/(comments|saves|ratings|reports)$/,
-  /^\/poems\/\d+\/comments\/\d+(?:\/reports)?$/,
+  /^\/poems\/\d+\/saves$/,
+  /^\/poems\/\d+\/comments\/\d+$/,
 ];
 
 const staticAssets = [
@@ -403,16 +403,25 @@ function rateLimitPolicies(request: import('fastify').FastifyRequest): RateLimit
       : [actorPolicy, { key: `poem-ip:${ip}`, limit: 30, windowMs: 60 * 60_000 }];
   }
   if (request.method === 'POST' && /^\/poems\/\d+\/(comments|ratings|saves)$/.test(path)) {
-    return [{ key: `interaction:${actor}`, limit: 60, windowMs: 15 * 60_000 }];
+    const actorPolicy = { key: `interaction:${actor}`, limit: 60, windowMs: 15 * 60_000 };
+    return request.currentUser
+      ? [actorPolicy]
+      : [actorPolicy, { key: `interaction-ip:${ip}`, limit: 180, windowMs: 15 * 60_000 }];
   }
   if (request.method === 'POST' && /^\/poems\/\d+\/comments\/\d+$/.test(path)) {
     return [{ key: `interaction:${actor}`, limit: 60, windowMs: 15 * 60_000 }];
   }
   if (request.method === 'POST' && /^\/poems\/\d+\/reports$/.test(path)) {
-    return [{ key: `report:${actor}`, limit: 10, windowMs: 60 * 60_000 }];
+    const actorPolicy = { key: `report:${actor}`, limit: 10, windowMs: 60 * 60_000 };
+    return request.currentUser
+      ? [actorPolicy]
+      : [actorPolicy, { key: `report-ip:${ip}`, limit: 30, windowMs: 60 * 60_000 }];
   }
   if (request.method === 'POST' && /^\/poems\/\d+\/comments\/\d+\/reports$/.test(path)) {
-    return [{ key: `comment-report:${actor}`, limit: 10, windowMs: 60 * 60_000 }];
+    const actorPolicy = { key: `comment-report:${actor}`, limit: 10, windowMs: 60 * 60_000 };
+    return request.currentUser
+      ? [actorPolicy]
+      : [actorPolicy, { key: `comment-report-ip:${ip}`, limit: 30, windowMs: 60 * 60_000 }];
   }
   return [];
 }
