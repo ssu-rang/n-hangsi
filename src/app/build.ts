@@ -15,6 +15,7 @@ import { registerReportRoutes } from '../reports/routes.js';
 import { registerPoemRoutes } from '../poems/routes.js';
 import { registerUserRoutes } from '../users/routes.js';
 import { listPoems } from '../db/poems.js';
+import { registerPageViews } from '../pageviews/pageviews.js';
 
 export interface AppOptions {
   logger?: boolean;
@@ -70,6 +71,7 @@ export async function buildApp(options: AppOptions = {}): Promise<FastifyInstanc
   registerViewRenderer(app, appBaseUrl);
   registerStaticAssets(app);
   registerSecurityHooks(app, database, options.adminEmail ?? process.env.ADMIN_EMAIL);
+  registerPageViews(app, database);
   registerRoutes(app, database, appBaseUrl);
   registerErrorHandlers(app);
 
@@ -130,6 +132,7 @@ function registerViewRenderer(
       ...data,
       seo,
       currentUser: this.request.currentUser,
+      isAdmin: this.request.isAdmin,
       csrfToken,
       oauthEnabled: Boolean(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET),
     });

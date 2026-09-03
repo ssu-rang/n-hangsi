@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="ko">
+<head>{% set title='페이지뷰 통계' %}{% include '_head.njk' %}</head>
+<body class="interior-page">
+{% include '_header.njk' %}
+<main class="container py-5">
+    <section class="page-head">
+        <h1 class="section-title">페이지뷰 통계</h1>
+        <p class="text-secondary mb-0">성공적으로 표시된 HTML 페이지를 기준으로 집계합니다. 시간대는 한국 시간입니다.</p>
+    </section>
+
+    <div class="row g-3 mt-2">
+        <div class="col-md-4"><div class="card h-100 p-4"><div class="text-secondary">오늘</div><strong class="fs-2">{{ today.views }}</strong><span>방문자 {{ today.visitors }}명</span></div></div>
+        <div class="col-md-4"><div class="card h-100 p-4"><div class="text-secondary">최근 7일</div><strong class="fs-2">{{ last7Days.views }}</strong><span>방문자 {{ last7Days.visitors }}명</span></div></div>
+        <div class="col-md-4"><div class="card h-100 p-4"><div class="text-secondary">최근 30일</div><strong class="fs-2">{{ last30Days.views }}</strong><span>방문자 {{ last30Days.visitors }}명</span></div></div>
+    </div>
+
+    <section class="page-head mt-5"><h2 class="section-title">최근 14일</h2></section>
+    <div class="table-responsive mt-3">
+        <table class="table align-middle">
+            <thead><tr><th>날짜</th><th>페이지뷰</th><th>방문자</th></tr></thead>
+            <tbody>
+            {% for item in daily %}<tr><td>{{ item.date }}</td><td>{{ item.views }}</td><td>{{ item.visitors }}</td></tr>
+            {% else %}<tr><td colspan="3" class="text-secondary">아직 기록된 페이지뷰가 없습니다.</td></tr>{% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <section class="page-head mt-5"><h2 class="section-title">인기 페이지 · 최근 30일</h2></section>
+    <div class="table-responsive mt-3">
+        <table class="table align-middle">
+            <thead><tr><th>경로</th><th>페이지뷰</th><th>방문자</th></tr></thead>
+            <tbody>
+            {% for item in pages %}<tr><td><a href="{{ item.path }}">{{ item.path }}</a></td><td>{{ item.views }}</td><td>{{ item.visitors }}</td></tr>
+            {% else %}<tr><td colspan="3" class="text-secondary">아직 기록된 페이지뷰가 없습니다.</td></tr>{% endfor %}
+            </tbody>
+        </table>
+    </div>
+</main>
+{% include '_footer.njk' %}
+</body>
+</html>

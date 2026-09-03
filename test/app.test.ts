@@ -724,6 +724,42 @@ test('reports are deduplicated and admin actions are server-authorized', async t
   assert.match(reportsAfterDeletion.body, /resolved/);
 });
 
+test('successful HTML page views are stored by date and visible to admins', async t => {
+  const db = createDatabase(':memory:');
+  const app = await buildApp({
+    db,
+    sessionSecret: testSessionSecret,
+    appBaseUrl: 'http://localhost:8080',
+    adminEmail: 'analytics-admin@example.com',
+  });
+  t.after(() => app.close());
+  const admin = await client(app);
+  await googleLogin(admin, 'analytics-admin@example.com', '통계 관리자');
+  db.exec('DELETE FROM page_views');
+
+  await admin.request({ method: 'GET', url: '/?campaign=one' });
+  await admin.request({ method: 'GET', url: '/?campaign=two' });
+  await admin.request({ method: 'GET', url: '/poems' });
+  await admin.request({ method: 'GET', url: '/css/app.css' });
+  await admin.request({ method: 'GET', url: '/missing-page' });
+
+  const rows = db.prepare(`
+    SELECT path, user_id AS userId, view_date AS viewDate
+    FROM page_views
+    ORDER BY id
+  `).all() as unknown as Array<{ path: string; userId: number | null; viewDate: string }>;
+  assert.deepEqual(rows.map(row => row.path), ['/', '/', '/poems']);
+  assert.ok(rows.every(row => row.userId !== null));
+  assert.ok(rows.every(row => /^\d{4}-\d{2}-\d{2}$/.test(row.viewDate)));
+
+  const dashboard = await admin.request({ method: 'GET', url: '/admin/pageviews' });
+  assert.equal(dashboard.statusCode, 200);
+  assert.match(dashboard.body, /페이지뷰 통계/);
+  assert.match(dashboard.body, /최근 30일/);
+  assert.match(dashboard.body, /<strong class="fs-2">3<\/strong>/);
+  assert.equal((db.prepare('SELECT count(*) AS count FROM page_views').get() as { count: number }).count, 3);
+});
+
 test('members can report comments once and admins can review and delete them', async t => {
   const app = await testApp('admin@example.com'); t.after(() => app.close());
   const member = await client(app);

@@ -2,7 +2,7 @@
   <a class="navbar-brand fw-black" href="/" aria-label="N행시 홈"><span class="brand-logo-crop" aria-hidden="true"><img class="brand-logo" src="/images/nhangsi-logo.v1.png" alt=""></span></a>
   <div id="mainNav" class="navbar-collapse"><ul class="navbar-nav ms-auto flex-row gap-lg-2">
     <li class="nav-item"><a class="nav-link" href="/">홈</a></li><li class="nav-item"><a class="nav-link" href="/poems">마당</a></li>
-    {% if currentUser %}<li class="nav-item"><a class="nav-link" href="/profile">프로필</a></li><li class="nav-item"><a class="nav-link" href="/profile/saves">저장 목록</a></li><li class="nav-item"><form method="post" action="/logout"><input type="hidden" name="_csrf" value="{{ csrfToken }}"><button class="nav-link nav-login border-0 bg-transparent" type="submit">로그아웃</button></form></li>
+    {% if currentUser %}{% if isAdmin %}<li class="nav-item"><a class="nav-link" href="/admin/pageviews">통계</a></li>{% endif %}<li class="nav-item"><a class="nav-link" href="/profile">프로필</a></li><li class="nav-item"><a class="nav-link" href="/profile/saves">저장 목록</a></li><li class="nav-item"><form method="post" action="/logout"><input type="hidden" name="_csrf" value="{{ csrfToken }}"><button class="nav-link nav-login border-0 bg-transparent" type="submit">로그아웃</button></form></li>
     {% else %}<li class="nav-item"><a class="nav-link nav-login" href="/login">로그인</a></li>{% endif %}
   </ul></div>
 </nav></header>

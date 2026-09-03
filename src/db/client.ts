@@ -88,6 +88,14 @@ export function createDatabase(filename: string = process.env.DATABASE_PATH || '
       key TEXT PRIMARY KEY,
       value TEXT NOT NULL
     );
+    CREATE TABLE IF NOT EXISTS page_views (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      path TEXT NOT NULL,
+      visitor_id TEXT NOT NULL,
+      user_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
+      view_date TEXT NOT NULL DEFAULT (date('now', '+9 hours')),
+      viewed_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
     CREATE INDEX IF NOT EXISTS idx_reports_status_created
       ON reports(status, created_at DESC, id DESC);
     CREATE INDEX IF NOT EXISTS idx_reports_poem ON reports(poem_id);
@@ -98,6 +106,10 @@ export function createDatabase(filename: string = process.env.DATABASE_PATH || '
     CREATE INDEX IF NOT EXISTS idx_comments_poem ON comments(poem_id, created_at);
     CREATE INDEX IF NOT EXISTS idx_saved_user ON saved_poems(user_id, id DESC);
     CREATE INDEX IF NOT EXISTS idx_ratings_poem ON ratings(poem_id);
+    CREATE INDEX IF NOT EXISTS idx_page_views_date
+      ON page_views(view_date DESC);
+    CREATE INDEX IF NOT EXISTS idx_page_views_path_date
+      ON page_views(path, view_date DESC);
   `);
   ensureColumn(db, 'reports', 'poem_word', 'TEXT');
   ensureColumn(db, 'reports', 'poem_lines_text', 'TEXT');

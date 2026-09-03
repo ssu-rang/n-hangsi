@@ -73,6 +73,24 @@ http://localhost:8080/login/oauth2/code/google
 
 관리자 권한은 서버에서 이메일과 세션을 기준으로 확인합니다.
 
+### 페이지뷰 확인
+
+`ADMIN_EMAIL`에 등록된 Google 계정으로 로그인한 뒤 `/admin/pageviews`에서 오늘, 최근 7일·30일 페이지뷰와 방문자 수, 인기 페이지를 확인할 수 있습니다. 성공적으로 표시된 HTML `GET` 요청만 기록하며 관리자 페이지, 정적 파일, 오류 응답은 제외합니다. 쿼리 문자열, IP, User-Agent는 저장하지 않습니다.
+
+원본 데이터는 `DATABASE_PATH`가 가리키는 SQLite 파일(기본값 `data/nhangsi.sqlite`)의 `page_views` 테이블에 한국 날짜별로 저장됩니다. SQLite CLI가 설치되어 있다면 다음처럼 날짜별 합계를 확인할 수 있습니다.
+
+```powershell
+sqlite3 data/nhangsi.sqlite "SELECT view_date, count(*) AS views, count(DISTINCT visitor_id) AS visitors FROM page_views GROUP BY view_date ORDER BY view_date DESC;"
+```
+
+최근 원본 기록은 다음 쿼리로 확인할 수 있습니다.
+
+```powershell
+sqlite3 data/nhangsi.sqlite "SELECT id, view_date, path, user_id, viewed_at FROM page_views ORDER BY id DESC LIMIT 100;"
+```
+
+Railway에서는 Volume에 연결한 `/data/nhangsi.sqlite`가 운영 DB입니다. 파일을 수정하거나 내려받기 전에 백업하고, 운영 중인 DB에는 조회 전용 쿼리만 실행하는 것을 권장합니다.
+
 ## Railway 배포
 
 권장 설정:
