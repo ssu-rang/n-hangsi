@@ -9,7 +9,6 @@ Fastify, TypeScript, Nunjucks와 Node.js 내장 SQLite로 만든 서버 렌더�
 - 작품 신고와 관리자 신고 처리
 - 프로필, 저장 목록과 회원탈퇴
 - 496개 단어를 중복 없이 순환하는 오늘의 단어
-- 동의 기반 PostHog 페이지 방문 분석
 - 개인정보처리방침
 
 ## 요구 사항
@@ -50,8 +49,6 @@ npm start
 | `GOOGLE_CLIENT_ID` | Google OAuth 클라이언트 ID |
 | `GOOGLE_CLIENT_SECRET` | Google OAuth 클라이언트 보안 비밀 |
 | `GOOGLE_REDIRECT_URI` | Google OAuth 콜백 주소 |
-| `POSTHOG_KEY` | 선택 사항. PostHog Project Token |
-| `POSTHOG_HOST` | 선택 사항. PostHog 수집 호스트 |
 
 ## Google 로그인
 
@@ -66,19 +63,6 @@ http://localhost:8080/login/oauth2/code/google
 운영 환경에서는 실제 HTTPS 주소를 `GOOGLE_REDIRECT_URI`와 Google Cloud Console의 승인된 리디렉션 URI에 동일하게 등록해야 합니다.
 
 회원탈퇴는 본인 프로필의 계정 관리 영역에서 할 수 있습니다. 탈퇴하면 계정·댓글·평가·저장 기록이 삭제되며 작성한 작품은 작성자 정보가 익명화된 상태로 유지됩니다.
-
-## PostHog
-
-PostHog는 선택 기능입니다. `POSTHOG_KEY`가 설정된 경우에만 동의 배너가 나타나며, `POSTHOG_HOST`를 생략하면 US 수집 호스트를 사용합니다.
-
-```text
-POSTHOG_KEY=phc_프로젝트토큰
-POSTHOG_HOST=https://us.i.posthog.com
-```
-
-EU 프로젝트는 `POSTHOG_HOST=https://eu.i.posthog.com`을 사용합니다.
-
-이용자가 동의하기 전에는 SDK를 로드하지 않습니다. 동의 후에도 페이지 조회와 이탈만 수집하며 자동 클릭 수집, 입력 내용 수집, 세션 녹화와 예외 수집은 사용하지 않습니다. 선택은 `/privacy`에서 다시 설정할 수 있습니다.
 
 ## 관리자
 
@@ -107,7 +91,6 @@ SQLite 데이터를 유지하려면 Railway Volume을 `/data`에 연결해야 �
 - Google OAuth 운영 콜백 주소 등록
 - `ADMIN_EMAIL` 설정
 - Railway Volume과 `DATABASE_PATH` 연결
-- 필요한 경우 PostHog Project Token과 리전 설정
 - HTTPS에서 로그인, 탈퇴, 작품 작성과 신고 처리 확인
 
 ## 검증

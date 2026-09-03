@@ -238,6 +238,9 @@ test('public pages, poem validation and anonymous creation', async t => {
   const privacyPage = await c.request({ method: 'GET', url: '/privacy' });
   assert.equal(privacyPage.statusCode, 200);
   assert.match(privacyPage.body, /<h1>개인정보처리방침<\/h1>/);
+  assert.match(privacyPage.body, /일반 릴스 또는 게시물/);
+  assert.match(privacyPage.body, /사용자 ID, Google 계정 식별자, 이메일 주소, 닉네임/);
+  assert.match(privacyPage.body, /유료 광고 또는 광고 소재로 사용하지 않습니다/);
 
   const loginPage = await c.request({ method: 'GET', url: '/login' });
   assert.match(loginPage.body, /<meta name="robots" content="noindex, nofollow">/);
@@ -262,6 +265,8 @@ test('public pages, poem validation and anonymous creation', async t => {
   assert.match(advertisingPage.body, /Instagram DM/);
   const writePage = await c.request({ method: 'GET', url: '/poems/new' });
   assert.match(writePage.body, /maxlength="5"/);
+  assert.match(writePage.body, /작성한 N행시는 N행시 공식 인스타그램 등 SNS에 소개될 수 있어요\./);
+  assert.match(initialExplorePage.body, /작성한 N행시는 N행시 공식 인스타그램 등 SNS에 소개될 수 있어요\./);
   let response = await c.request({ method: 'POST', url: '/poems', headers, payload: form({ _csrf: c.csrf, word: '가나다라마바' }) });
   assert.equal(response.statusCode, 200);
   assert.match(response.body, /제시어는 2~5자여야 합니다/);
@@ -581,38 +586,6 @@ test('configuration rejects weak session secrets', async () => {
     buildApp({ databasePath: ':memory:', sessionSecret: 'a'.repeat(32) }),
     /at least 12 distinct characters/,
   );
-  await assert.rejects(
-    buildApp({
-      databasePath: ':memory:',
-      sessionSecret: testSessionSecret,
-      posthogKey: 'ph_test',
-      posthogHost: 'http://insecure.example.com',
-    }),
-    /POSTHOG_HOST must use HTTPS/,
-  );
-});
-
-test('PostHog is loaded only when configured and after browser consent', async t => {
-  const app = await buildApp({
-    databasePath: ':memory:',
-    sessionSecret: testSessionSecret,
-    appBaseUrl: 'http://localhost:8080',
-    posthogKey: 'ph_test_public_key',
-    posthogHost: 'https://us.i.posthog.com',
-  });
-  t.after(() => app.close());
-
-  const home = await app.inject({ method: 'GET', url: '/' });
-  assert.match(home.body, /src="\/js\/analytics\.js"/);
-  assert.match(home.body, /data-posthog-key="ph_test_public_key"/);
-  const analytics = await app.inject({ method: 'GET', url: '/js/analytics.js' });
-  assert.equal(analytics.statusCode, 200);
-  assert.match(analytics.body, /consent === "granted"/);
-  assert.match(analytics.body, /autocapture: false/);
-  assert.match(analytics.body, /disable_session_recording: true/);
-  const sdk = await app.inject({ method: 'GET', url: '/js/posthog.js' });
-  assert.equal(sdk.statusCode, 200);
-  assert.match(sdk.headers['content-type'] ?? '', /text\/javascript/);
 });
 
 test('anonymous poem creation is rate limited', async t => {

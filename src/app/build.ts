@@ -24,8 +24,6 @@ export interface AppOptions {
   trustProxy?: boolean | string | string[];
   appBaseUrl?: string;
   adminEmail?: string;
-  posthogKey?: string;
-  posthogHost?: string;
 }
 
 const sourceRoot = join(process.cwd(), 'src');
@@ -44,7 +42,6 @@ const staticAssets = [
   ],
   ['/css/app.css', 'css/app.css', 'text/css; charset=utf-8', 'no-cache, must-revalidate'],
   ['/js/server-app.js', 'js/server-app.js', 'text/javascript; charset=utf-8', 'no-cache, must-revalidate'],
-  ['/js/analytics.js', 'js/analytics.js', 'text/javascript; charset=utf-8', 'no-cache, must-revalidate'],
   [
     '/images/nhangsi-logo.v1.png',
     'images/nhangsi-logo.v1.png',
@@ -58,10 +55,7 @@ export async function buildApp(options: AppOptions = {}): Promise<FastifyInstanc
   const sessionSecret = configuredSessionSecret
     ?? (isProductionEnvironment() ? undefined : randomBytes(48).toString('base64url'));
   const appBaseUrl = options.appBaseUrl ?? process.env.APP_BASE_URL ?? 'http://localhost:8080';
-  const posthogKey = options.posthogKey ?? process.env.POSTHOG_KEY;
-  const posthogHost = options.posthogHost ?? process.env.POSTHOG_HOST ?? 'https://us.i.posthog.com';
   ensureConfiguration(sessionSecret, appBaseUrl, Boolean(options.appBaseUrl));
-  ensurePosthogConfiguration(posthogKey, posthogHost);
 
   const app = Fastify({
     logger: options.logger ?? false,
@@ -73,7 +67,7 @@ export async function buildApp(options: AppOptions = {}): Promise<FastifyInstanc
   }
 
   await registerCorePlugins(app, sessionSecret!);
-  registerViewRenderer(app, appBaseUrl, posthogKey, posthogHost);
+  registerViewRenderer(app, appBaseUrl);
   registerStaticAssets(app);
   registerSecurityHooks(app, database, options.adminEmail ?? process.env.ADMIN_EMAIL);
   registerRoutes(app, database, appBaseUrl);
@@ -103,8 +97,6 @@ async function registerCorePlugins(app: FastifyInstance, sessionSecret: string):
 function registerViewRenderer(
   app: FastifyInstance,
   appBaseUrl: string,
-  posthogKey: string | undefined,
-  posthogHost: string,
 ): void {
   const views = nunjucks.configure(join(sourceRoot, 'views'), {
     autoescape: true,
@@ -140,8 +132,6 @@ function registerViewRenderer(
       currentUser: this.request.currentUser,
       csrfToken,
       oauthEnabled: Boolean(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET),
-      posthogKey,
-      posthogHost,
     });
 
     return this
@@ -164,11 +154,6 @@ function registerStaticAssets(app: FastifyInstance): void {
         .send(contents);
     });
   }
-
-  app.get('/js/posthog.js', async (_request, reply) => reply
-    .header('Cache-Control', 'public, max-age=86400')
-    .type('text/javascript; charset=utf-8')
-    .send(await readFile(join(process.cwd(), 'node_modules/posthog-js/dist/array.js'))));
 
 }
 
@@ -355,17 +340,6 @@ function validateGoogleRedirectUri(value: string): void {
   if (isProductionEnvironment() && url.protocol !== 'https:') {
     throw new Error('GOOGLE_REDIRECT_URI must use HTTPS in production');
   }
-}
-
-function ensurePosthogConfiguration(key: string | undefined, host: string): void {
-  if (!key) return;
-  let url: URL;
-  try {
-    url = new URL(host);
-  } catch {
-    throw new Error('POSTHOG_HOST must be an absolute URL');
-  }
-  if (url.protocol !== 'https:') throw new Error('POSTHOG_HOST must use HTTPS');
 }
 
 function isProductionEnvironment(): boolean {

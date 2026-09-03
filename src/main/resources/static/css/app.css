@@ -1616,57 +1616,6 @@ label {
     text-underline-offset: 3px
 }
 
-.analytics-consent {
-    position: fixed;
-    z-index: 1080;
-    right: 20px;
-    bottom: 20px;
-    left: 20px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 20px;
-    width: min(760px, calc(100% - 40px));
-    margin: 0 auto;
-    padding: 18px 20px;
-    background: var(--surface);
-    border: 3px solid var(--line);
-    border-top-color: var(--secondary);
-    border-bottom-color: var(--primary)
-}
-
-.analytics-consent p {
-    margin: 0;
-    font-size: 14px
-}
-
-.analytics-consent > div {
-    display: flex;
-    align-items: center;
-    flex: none;
-    gap: 8px
-}
-
-.analytics-consent a {
-    margin-right: 4px;
-    font-size: 13px;
-    text-decoration: underline;
-    text-underline-offset: 3px
-}
-
-@media (max-width: 700px) {
-    .analytics-consent {
-        align-items: stretch;
-        flex-direction: column;
-        gap: 12px
-    }
-
-    .analytics-consent > div {
-        justify-content: flex-end;
-        flex-wrap: wrap
-    }
-}
-
 .interior-page .explore-grid {
     grid-template-columns: 1fr;
     gap: 0
@@ -1981,6 +1930,24 @@ label {
 
 .interior-page .write-card > .card-body {
     padding: 0 !important
+}
+
+.write-form-actions {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px
+}
+
+.write-sharing-note {
+    margin: 0;
+    color: var(--muted);
+    font-size: 12px;
+    line-height: 1.4
+}
+
+.write-form-actions > :last-child {
+    flex: none
 }
 
 .write-layout-shell {
