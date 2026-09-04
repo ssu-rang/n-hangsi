@@ -4,16 +4,12 @@ import type { DatabaseSync } from 'node:sqlite';
 import { bodyOf, queryOf } from '../shared/request.js';
 import { createUser, findOrLinkGoogleUser } from '../db/users.js';
 
-interface GoogleToken {
-  access_token: string;
-}
-
-interface GoogleUserInfo {
+type GoogleUserInfo = {
   sub: string;
   email?: string;
   email_verified?: boolean;
   name?: string;
-}
+};
 
 export function registerAuthRoutes(app: FastifyInstance, db: DatabaseSync): void {
   app.get('/login', async (request, reply) => {
@@ -154,7 +150,7 @@ async function fetchGoogleProfile(
   });
   if (!tokenResponse.ok) throw new Error('Google token exchange failed');
 
-  const token = await tokenResponse.json() as GoogleToken;
+  const token = await tokenResponse.json() as { access_token: string };
   const profileResponse = await fetch('https://openidconnect.googleapis.com/v1/userinfo', {
     headers: { authorization: `Bearer ${token.access_token}` },
   });

@@ -11,7 +11,7 @@ const POEM_QUERY = `
   LEFT JOIN ratings r ON r.poem_id = p.id
   LEFT JOIN comments c ON c.poem_id = p.id`;
 
-export interface PoemData {
+export type PoemData = {
   id: number;
   word: string;
   lines: string[];
@@ -22,17 +22,17 @@ export interface PoemData {
   commentCount: number;
   saved: boolean;
   createdAt: string | null;
-}
+};
 
-export interface CommentData {
+export type CommentData = {
   id: number;
   authorId: number | null;
   authorName: string;
   content: string;
   createdAt: string | null;
-}
+};
 
-interface PoemRow {
+type PoemRow = {
   id: number;
   word: string;
   lines_text: string;
@@ -42,15 +42,15 @@ interface PoemRow {
   rating: number;
   rating_count: number;
   comment_count: number;
-}
+};
 
-interface CommentRow {
+type CommentRow = {
   id: number;
   author_id: number | null;
   author_name: string;
   content: string;
   created_at: string;
-}
+};
 
 export function listPoems(db: DatabaseSync, viewerId: number | null = null): PoemData[] {
   const rows = db.prepare(`${POEM_QUERY} GROUP BY p.id ORDER BY p.created_at DESC, p.id DESC`)

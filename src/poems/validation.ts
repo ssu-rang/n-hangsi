@@ -1,14 +1,14 @@
 import type { Fields } from '../shared/request.js';
 
-export interface PoemForm {
+export type PoemForm = {
   word: string;
   lines: string[];
-}
+};
 
-interface ValidationResult {
+type ValidationResult = {
   form: PoemForm;
   errors: Record<string, string>;
-}
+};
 
 const lineFieldPattern = /^lines\[(\d+)]$/;
 

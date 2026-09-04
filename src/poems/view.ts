@@ -1,13 +1,13 @@
 import type { CommentData, PoemData } from '../db/poems.js';
 import { formatKoreaDateTime } from '../shared/date-time.js';
 
-export interface PoemView extends Omit<PoemData, 'createdAt'> {
+export type PoemView = Omit<PoemData, 'createdAt'> & {
   createdAt: string | null;
-}
+};
 
-export interface CommentView extends Omit<CommentData, 'createdAt'> {
+export type CommentView = Omit<CommentData, 'createdAt'> & {
   createdAt: string | null;
-}
+};
 
 export function toPoemView(poem: PoemData): PoemView {
   return {

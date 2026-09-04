@@ -17,7 +17,7 @@ import { registerUserRoutes } from '../users/routes.js';
 import { listPoems } from '../db/poems.js';
 import { registerPageViews } from '../pageviews/pageviews.js';
 
-export interface AppOptions {
+export type AppOptions = {
   logger?: boolean;
   db?: DatabaseSync;
   databasePath?: string;
@@ -25,7 +25,7 @@ export interface AppOptions {
   trustProxy?: boolean | string | string[];
   appBaseUrl?: string;
   adminEmail?: string;
-}
+};
 
 const sourceRoot = join(process.cwd(), 'src');
 const protectedPaths = [
@@ -355,11 +355,11 @@ function configuredTrustProxy(): boolean | string[] {
   return Boolean(process.env.RAILWAY_ENVIRONMENT_ID);
 }
 
-interface RateLimitPolicy {
+type RateLimitPolicy = {
   key: string;
   limit: number;
   windowMs: number;
-}
+};
 
 function rateLimitPolicies(request: import('fastify').FastifyRequest): RateLimitPolicy[] {
   const path = request.url.split('?')[0] ?? request.url;

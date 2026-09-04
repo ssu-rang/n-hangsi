@@ -3,7 +3,7 @@ import type { DatabaseSync } from 'node:sqlite';
 const LINE_SEPARATOR = '\u001e';
 export type ReportStatus = 'resolved' | 'rejected';
 
-export interface ReportData {
+export type ReportData = {
   id: number;
   poemId: number;
   poemExists: boolean;
@@ -14,9 +14,9 @@ export interface ReportData {
   reason: string;
   status: 'pending' | ReportStatus;
   createdAt: string;
-}
+};
 
-export interface CommentReportData {
+export type CommentReportData = {
   id: number;
   commentId: number;
   commentExists: boolean;
@@ -28,9 +28,9 @@ export interface CommentReportData {
   reason: string;
   status: 'pending' | ReportStatus;
   createdAt: string;
-}
+};
 
-interface ReportRow {
+type ReportRow = {
   id: number;
   poem_id: number | null;
   reported_poem_id: number;
@@ -41,7 +41,7 @@ interface ReportRow {
   reason: string;
   status: 'pending' | ReportStatus;
   created_at: string;
-}
+};
 
 export function createReport(
   db: DatabaseSync,

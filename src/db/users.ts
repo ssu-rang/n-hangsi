@@ -1,17 +1,17 @@
 import type { DatabaseSync } from 'node:sqlite';
 import type { User } from '../shared/user.js';
 
-interface NewUser {
+type NewUser = {
   username: string;
   nickname: string;
   provider?: string;
   providerUserId?: string | null;
-}
+};
 
-export interface ProfileStats {
+export type ProfileStats = {
   averageRating: number | null;
   ratingCount: number;
-}
+};
 
 export function findUserById(db: DatabaseSync, id: number): User | undefined {
   return db.prepare('SELECT * FROM users WHERE id = ?').get(id) as unknown as User | undefined;
