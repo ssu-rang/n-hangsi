@@ -13,6 +13,7 @@
             <div class="card-body p-4">
                 <div class="d-flex justify-content-between"><h2>{{ poem.word }}</h2><span class="rating">★ {{ poem.rating }}</span></div>
                 {% for line in poem.lines %}<div class="poem-line"><strong>{{ poem.word[loop.index0] }}</strong><span>{{ line }}</span></div>{% endfor %}
+                <div class="meta">{% if poem.authorId %}<a class="author-link" href="/users/{{ poem.authorId }}">@{{ poem.authorName }}</a>{% else %}@{{ poem.authorName }}{% endif %} · 평가 {{ poem.ratingCount }} · 조회 {{ poem.viewCount }}</div>
                 <a class="stretched-link" href="/poems/{{ poem.id }}"><span class="visually-hidden">상세 보기</span></a>
             </div>
         </article>

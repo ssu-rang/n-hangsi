@@ -38,7 +38,7 @@
                         </div>
                         {% endfor %}
                         <div class="meta">
-                            @{{ poem.authorName }} · 평점 {{ poem.rating }} · 댓글 {{ poem.commentCount }}
+                            {% if poem.authorId %}<a class="author-link" href="/users/{{ poem.authorId }}">@{{ poem.authorName }}</a>{% else %}@{{ poem.authorName }}{% endif %} · ★ {{ poem.rating }} ({{ poem.ratingCount }}) · 조회 {{ poem.viewCount }} · 댓글 {{ poem.commentCount }}
                             {% if poem.createdAt %} · {{ poem.createdAt }}{% endif %}
                         </div>
                         {% else %}

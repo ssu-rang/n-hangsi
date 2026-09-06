@@ -98,3 +98,34 @@ test('member-only comments and ratings are migrated for anonymous interactions',
   assert.ok(migrated.prepare("SELECT 1 FROM app_metadata WHERE key = 'anonymous-interactions-v1'").get());
   migrated.close();
 });
+
+test('referrer migration preserves existing page views and is safe to reopen', t => {
+  const directory = mkdtempSync(join(tmpdir(), 'nhangsi-referrer-migration-'));
+  const filename = join(directory, 'legacy.sqlite');
+  t.after(() => rmSync(directory, { recursive: true, force: true }));
+  const legacy = new DatabaseSync(filename);
+  legacy.exec(`
+    CREATE TABLE page_views (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      path TEXT NOT NULL,
+      visitor_id TEXT NOT NULL,
+      user_id INTEGER,
+      view_date TEXT NOT NULL,
+      viewed_at TEXT NOT NULL
+    );
+    INSERT INTO page_views(path, visitor_id, view_date, viewed_at)
+    VALUES ('/poems/1', 'existing-visitor', '2026-09-01', '2026-09-01 01:00:00');
+  `);
+  legacy.close();
+  for (let i = 0; i < 2; i++) {
+    const migrated = createDatabase(filename);
+    try {
+      const rows = migrated.prepare('SELECT * FROM page_views').all();
+      assert.equal(rows.length, 1);
+      assert.equal(rows[0]?.path, '/poems/1');
+      assert.equal(rows[0]?.visitor_id, 'existing-visitor');
+      assert.equal(rows[0]?.viewed_at, '2026-09-01 01:00:00');
+      assert.equal(rows[0]?.referrer_source, null);
+    } finally { migrated.close(); }
+  }
+});

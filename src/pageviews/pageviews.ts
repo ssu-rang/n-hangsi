@@ -14,17 +14,18 @@ type PageRow = SummaryRow & {
   path: string;
 };
 
-export function registerPageViews(app: FastifyInstance, db: DatabaseSync): void {
+export function registerPageViews(app: FastifyInstance, db: DatabaseSync, appBaseUrl: string): void {
   const insertPageView = db.prepare(`
-    INSERT INTO page_views(path, visitor_id, user_id, view_date)
-    VALUES (?, ?, ?, date('now', '+9 hours'))
+    INSERT INTO page_views(path, visitor_id, user_id, referrer_source, view_date)
+    VALUES (?, ?, ?, ?, date('now', '+9 hours'))
   `);
 
   app.addHook('onResponse', async (request, reply) => {
     if (!isPageView(request, reply)) return;
 
     const path = new URL(request.url, 'http://localhost').pathname;
-    insertPageView.run(path, request.session.sessionId, request.currentUser?.id ?? null);
+    insertPageView.run(path, request.session.sessionId, request.currentUser?.id ?? null,
+      classifyReferrer(request.headers.referer, appBaseUrl));
   });
 
   app.get('/admin/pageviews', async (_request, reply) => {
@@ -53,7 +54,19 @@ export function registerPageViews(app: FastifyInstance, db: DatabaseSync): void 
       LIMIT 50
     `).all() as unknown as PageRow[];
 
+    const sourceCounts = db.prepare(`
+      SELECT referrer_source AS source, count(*) AS visits
+      FROM page_views
+      WHERE view_date >= date('now', '+9 hours', '-29 days')
+        AND referrer_source IS NOT NULL
+      GROUP BY referrer_source
+    `).all() as unknown as Array<{ source: string; visits: number }>;
+    const sources = Object.entries(referrerLabels).map(([source, label]) => ({
+      label, visits: sourceCounts.find(row => row.source === source)?.visits ?? 0,
+    }));
+
     return reply.view('admin/pageviews.njk', {
+      sources,
       today,
       last7Days,
       last30Days,
@@ -61,6 +74,30 @@ export function registerPageViews(app: FastifyInstance, db: DatabaseSync): void 
       pages,
     });
   });
+}
+
+const referrerLabels = {
+  naver: '네이버', google: 'Google', instagram: 'Instagram', x: 'X', direct: '직접 유입', other: '기타',
+};
+
+// Only category values are persisted; internal navigation is not a new arrival.
+export function classifyReferrer(referrer: string | undefined, appBaseUrl: string): string | null {
+  if (!referrer) return 'direct';
+  try {
+    const url = new URL(referrer);
+    if (!['http:', 'https:'].includes(url.protocol)) return 'other';
+    const host = url.hostname.toLowerCase().replace(/\.$/, '');
+    if (host === new URL(appBaseUrl).hostname.toLowerCase()) return null;
+    const matches = (domain: string) => host === domain || host.endsWith(`.${domain}`);
+    if (matches('naver.com') || matches('naver.me')) return 'naver';
+    if (matches('google.com') || matches('google.co.kr') || matches('google.co.jp')
+      || matches('google.co.uk') || matches('google.de') || matches('google.fr')) return 'google';
+    if (matches('instagram.com')) return 'instagram';
+    if (matches('x.com') || matches('twitter.com') || matches('t.co')) return 'x';
+    return 'other';
+  } catch {
+    return 'other';
+  }
 }
 
 function isPageView(request: FastifyRequest, reply: FastifyReply): boolean {

@@ -16,7 +16,7 @@
                 <h3>글자 수</h3>
                 <nav>
                     {% for value,label in [['all','전체'],['2','2행시'],['3','3행시'],['4','4행시'],['5','5행시']] %}
-                    <a href="/{% if value != 'all' %}?lines={{ value }}{% endif %}"
+                    <a href="/?lines={{ value }}&amp;sort={{ popularSort }}"
                        class="{% if lineFilter == value %}is-active{% endif %}"
                        {% if lineFilter == value %}aria-current="page"{% endif %}>{{ label }}</a>
                     {% endfor %}
@@ -50,7 +50,7 @@
                             </div>
                             {% endfor %}
                             <div class="meta recommendation-meta">
-                                @{{ recommended.authorName }} · 평점 {{ recommended.rating }} · 댓글 {{ recommended.commentCount }}
+                                {% if recommended.authorId %}<a class="author-link" href="/users/{{ recommended.authorId }}">@{{ recommended.authorName }}</a>{% else %}@{{ recommended.authorName }}{% endif %} · ★ {{ recommended.rating }} ({{ recommended.ratingCount }}) · 조회 {{ recommended.viewCount }} · 댓글 {{ recommended.commentCount }}
                             </div>
                         </div>
                         {% else %}
@@ -81,7 +81,7 @@
                     <h3>글자 수</h3>
                     <nav>
                         {% for value,label in [['all','전체'],['2','2행시'],['3','3행시'],['4','4행시'],['5','5행시']] %}
-                        <a href="/{% if value != 'all' %}?lines={{ value }}{% endif %}"
+                        <a href="/?lines={{ value }}&amp;sort={{ popularSort }}"
                            class="{% if lineFilter == value %}is-active{% endif %}"
                            {% if lineFilter == value %}aria-current="page"{% endif %}>{{ label }}</a>
                         {% endfor %}
@@ -89,7 +89,14 @@
                 </div>
             </section>
             <div class="d-flex justify-content-between align-items-end mb-3 home-section-head">
-                <h2 class="section-title mb-0">지금 인기 있는 N행시</h2>
+                <div class="popular-heading">
+                    <h2 class="section-title mb-0">지금 인기 있는 N행시</h2>
+                    <nav class="popular-sort" aria-label="인기 작품 정렬">
+                        {% for value,label in [['rating','평점순'],['views','조회수순']] %}
+                        <a href="/?lines={{ lineFilter }}&amp;sort={{ value }}"{% if popularSort == value %} class="is-active" aria-current="true"{% endif %}>{{ label }}</a>
+                        {% endfor %}
+                    </nav>
+                </div>
                 <a href="/poems">전체 보기</a>
             </div>
             <div class="trending-grid">
@@ -112,7 +119,7 @@
                                 </div>
                                 {% endfor %}
                                 <div class="meta">
-                                    @{{ poem.authorName }} · 평점 {{ poem.rating }} · 댓글 {{ poem.commentCount }}
+                                    {% if poem.authorId %}<a class="author-link" href="/users/{{ poem.authorId }}">@{{ poem.authorName }}</a>{% else %}@{{ poem.authorName }}{% endif %} · ★ {{ poem.rating }} ({{ poem.ratingCount }}) · 조회 {{ poem.viewCount }} · 댓글 {{ poem.commentCount }}
                                     {% if poem.createdAt %} · {{ poem.createdAt }}{% endif %}
                                 </div>
                             </div>

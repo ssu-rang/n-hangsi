@@ -12,7 +12,7 @@
         <h1>{{ poem.word }}</h1>
         <div class="detail-author">
             <span class="avatar">{{ poem.authorName[0] }}</span>
-            <div><strong>{{ poem.authorName }}</strong><div class="small text-secondary">{{ poem.createdAt }}</div></div>
+            <div>{% if poem.authorId %}<a class="author-link" href="/users/{{ poem.authorId }}"><strong>{{ poem.authorName }}</strong></a>{% else %}<strong>{{ poem.authorName }}</strong>{% endif %}<div class="small text-secondary">{{ poem.createdAt }}</div></div>
         </div>
         <div class="detail-lines">
             {% for line in poem.lines %}
@@ -21,7 +21,7 @@
         </div>
         <div class="detail-meta">
             <strong class="rating">★ {{ poem.rating }}</strong>
-            <span>평가 {{ poem.ratingCount }}</span><span>댓글 {{ poem.commentCount }}</span>
+            <span>평가 {{ poem.ratingCount }}</span><span>조회 {{ poem.viewCount }}</span><span>댓글 {{ poem.commentCount }}</span>
             {% if currentUser %}
             <form class="detail-save-form" method="post" action="/poems/{{ poem.id }}/saves">
                 <input type="hidden" name="_csrf" value="{{ csrfToken }}">

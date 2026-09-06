@@ -23,12 +23,13 @@ const validLineFilters = new Set(['2', '3', '4', '5']);
 export function registerPoemRoutes(app: FastifyInstance, db: DatabaseSync): void {
   app.get('/', async (request, reply) => {
     const requestedFilter = queryOf(request).lines;
+    const popularSort = queryOf(request).sort === 'views' ? 'views' : 'rating';
     const lineFilter = requestedFilter && validLineFilters.has(requestedFilter) ? requestedFilter : 'all';
     const accountDeleted = 'accountDeleted' in queryOf(request);
     const promptWord = dailyWord();
     const rankedPoems = listPopularPoems(db).map(toPoemView);
     const recentWords = [...new Set(listPoems(db).map(poem => poem.word))].slice(0, 15);
-    const popularPoems = listTrendingPoems(db).map(toPoemView)
+    const popularPoems = listTrendingPoems(db, popularSort).map(toPoemView)
       .filter(poem => matchesLineFilter(poem.word, lineFilter))
       .slice(0, 5);
     const promptPoems = rankedPoems.filter(poem => poem.word === promptWord);
@@ -36,6 +37,7 @@ export function registerPoemRoutes(app: FastifyInstance, db: DatabaseSync): void
     return reply.view('home.njk', {
       accountDeleted,
       popularPoems,
+      popularSort,
       promptPoems,
       recentWords,
       lineFilter,

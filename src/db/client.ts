@@ -112,6 +112,7 @@ export function createDatabase(filename: string = process.env.DATABASE_PATH || '
       ON page_views(path, view_date DESC);
   `);
   ensureColumn(db, 'reports', 'poem_word', 'TEXT');
+  ensureColumn(db, 'page_views', 'referrer_source', 'TEXT');
   ensureColumn(db, 'reports', 'poem_lines_text', 'TEXT');
   ensureColumn(db, 'reports', 'poem_author_id', 'INTEGER');
   ensureColumn(db, 'reports', 'poem_author_name', 'TEXT');

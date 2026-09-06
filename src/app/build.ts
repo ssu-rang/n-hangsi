@@ -71,7 +71,7 @@ export async function buildApp(options: AppOptions = {}): Promise<FastifyInstanc
   registerViewRenderer(app, appBaseUrl);
   registerStaticAssets(app);
   registerSecurityHooks(app, database, options.adminEmail ?? process.env.ADMIN_EMAIL);
-  registerPageViews(app, database);
+  registerPageViews(app, database, appBaseUrl);
   registerRoutes(app, database, appBaseUrl);
   registerErrorHandlers(app);
 

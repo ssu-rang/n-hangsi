@@ -6,7 +6,8 @@ const POEM_QUERY = `
   SELECT p.*,
     COALESCE(AVG(r.score), 0) AS rating,
     COUNT(DISTINCT r.id) AS rating_count,
-    COUNT(DISTINCT c.id) AS comment_count
+    COUNT(DISTINCT c.id) AS comment_count,
+    (SELECT COUNT(*) FROM page_views pv WHERE pv.path = '/poems/' || p.id) AS view_count
   FROM poems p
   LEFT JOIN ratings r ON r.poem_id = p.id
   LEFT JOIN comments c ON c.poem_id = p.id`;
@@ -19,6 +20,7 @@ export type PoemData = {
   authorName: string;
   rating: number;
   ratingCount: number;
+  viewCount: number;
   commentCount: number;
   saved: boolean;
   createdAt: string | null;
@@ -41,6 +43,7 @@ type PoemRow = {
   created_at: string;
   rating: number;
   rating_count: number;
+  view_count: number;
   comment_count: number;
 };
 
@@ -67,11 +70,12 @@ export function listPopularPoems(db: DatabaseSync): PoemData[] {
   return rows.map(row => poemFromRow(db, row, null));
 }
 
-export function listTrendingPoems(db: DatabaseSync): PoemData[] {
+export function listTrendingPoems(db: DatabaseSync, sort: 'rating' | 'views' = 'rating'): PoemData[] {
   const rows = db.prepare(`
     ${POEM_QUERY}
     GROUP BY p.id
     ORDER BY
+      ${sort === 'views' ? 'view_count DESC,' : ''}
       CASE WHEN p.created_at >= datetime('now', '-1 day') THEN 0 ELSE 1 END,
       rating DESC,
       rating_count DESC,
@@ -198,6 +202,7 @@ function poemFromRow(
     authorName: row.author_name,
     rating: row.rating,
     ratingCount: row.rating_count,
+    viewCount: row.view_count,
     commentCount: row.comment_count,
     saved,
     createdAt: row.created_at,

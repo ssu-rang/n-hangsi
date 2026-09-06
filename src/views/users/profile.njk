@@ -18,7 +18,7 @@
         <article class="profile-poem">
             <span class="line-count">{{ poem.word.length }}행시</span>
             <h3>{{ poem.word }}</h3>
-            <div class="meta">@{{ poem.authorName }} · 평점 {{ poem.rating }}</div>
+            <div class="meta">{% if poem.authorId %}<a class="author-link" href="/users/{{ poem.authorId }}">@{{ poem.authorName }}</a>{% else %}@{{ poem.authorName }}{% endif %} · ★ {{ poem.rating }} ({{ poem.ratingCount }}) · 조회 {{ poem.viewCount }}</div>
             <a class="stretched-link" href="/poems/{{ poem.id }}"><span class="visually-hidden">상세 보기</span></a>
         </article>
         {% endfor %}

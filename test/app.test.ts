@@ -814,3 +814,62 @@ test('members can report comments once and admins can review and delete them', a
   assert.equal(response.statusCode, 302);
   assert.doesNotMatch((await member.request({ method: 'GET', url: poemUrl })).body, /신고할 댓글/);
 });
+
+ test('view ranking reuses page views and author links stay anonymous-aware', async t => {
+  const db = createDatabase(':memory:');
+  const app = await buildApp({ db, sessionSecret: testSessionSecret }); t.after(() => app.close());
+  const author = createUser(db, { username: 'views@example.com', nickname: '조회작가', provider: 'google', providerUserId: 'views' });
+  const rated = createPoem(db, '평점', ['평점이', '점점'], author);
+  const viewed = createPoem(db, '조회', ['조회가', '회마다'], null);
+  ratePoem(db, rated, author.id, 5);
+  db.prepare("UPDATE poems SET created_at = datetime('now', '-2 days') WHERE id = ?").run(viewed);
+  for (let i = 0; i < 3; i++) await app.inject(`/poems/${viewed}?tracking=discard`);
+  await app.inject(`/poems/${rated}`);
+  await app.inject(`/poems/99999`);
+  await app.inject({ method: 'HEAD', url: `/poems/${rated}` });
+  assert.deepEqual(listTrendingPoems(db).map(p => p.id), [rated, viewed]);
+  assert.deepEqual(listTrendingPoems(db, 'views').map(p => [p.id, p.viewCount]), [[viewed, 3], [rated, 1]]);
+  const home = await app.inject('/?sort=views&lines=2');
+  assert.equal(home.statusCode, 200);
+  assert.ok(home.body.indexOf('href="/poems/' + viewed + '"') < home.body.indexOf('href="/poems/' + rated + '"'));
+  assert.match(home.body, /sort=views" class="is-active" aria-current="true"/);
+  assert.match(home.body, /★ 0 \(0\) · 조회 3/);
+  assert.match(home.body, new RegExp(`class="author-link" href="/users/${author.id}">@조회작가`));
+  assert.doesNotMatch(home.body, /href="\/users\/[^"]*">@익명/);
+  assert.match(home.body, /SNS: <a href="https:\/\/x.com\/N_hang_si"/);
+  const fallback = await app.inject('/?sort=invalid');
+  assert.match(fallback.body, /sort=rating" class="is-active" aria-current="true"/);
+  const detail = await app.inject(`/poems/${rated}`);
+  assert.match(detail.body, new RegExp(`class="author-link" href="/users/${author.id}"`));
+  assert.equal((await app.inject(`/users/${author.id}`)).statusCode, 200);
+  db.prepare("INSERT INTO page_views(path, visitor_id) VALUES (?, 'tie')").run(`/poems/${rated}`);
+  assert.deepEqual(listTrendingPoems(db, 'views').map(p => p.id), [rated, viewed]);
+});
+
+test('referrer categories integrate with existing analytics without storing URLs', async t => {
+  const db = createDatabase(':memory:');
+  const app = await buildApp({ db, sessionSecret: testSessionSecret, appBaseUrl: 'http://localhost:8080', adminEmail: 'source-admin@example.com' });
+  t.after(() => app.close());
+  const admin = await client(app);
+  await googleLogin(admin, 'source-admin@example.com', '유입관리자');
+  db.exec('DELETE FROM page_views');
+  const referrals = [
+    ['https://search.naver.com/search?secret=one', 'naver'],
+    ['https://www.google.co.kr/search?q=secret', 'google'],
+    ['https://l.instagram.com/?u=secret', 'instagram'],
+    ['https://t.co/secret', 'x'],
+    ['', 'direct'],
+    ['https://naver.com.evil.example/private?secret=yes', 'other'],
+    ['http://localhost:8080/poems?secret=internal', null],
+    ['invalid url', 'other'],
+  ] as const;
+  for (const [referer] of referrals) await app.inject({ url: '/?secret=discard', headers: referer ? { referer } : {} });
+  const rows = db.prepare('SELECT path, referrer_source FROM page_views ORDER BY id').all();
+  assert.deepEqual(rows.map(row => row.referrer_source), referrals.map(([, source]) => source));
+  assert.ok(rows.every(row => row.path === '/'));
+  const dashboard = await admin.request({ method: 'GET', url: '/admin/pageviews' });
+  assert.equal(dashboard.statusCode, 200);
+  assert.match(dashboard.body, /유입 경로 · 최근 30일/);
+  assert.match(dashboard.body, /<td>기타<\/td><td>2<\/td>/);
+  assert.doesNotMatch(dashboard.body, /secret|evil\.example/);
+});

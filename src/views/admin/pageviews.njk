@@ -26,6 +26,17 @@
         </table>
     </div>
 
+    <section class="page-head mt-5">
+        <h2 class="section-title">유입 경로 · 최근 30일</h2>
+        <p class="text-secondary mb-0">외부 페이지에서 들어오거나 참조 정보 없이 열린 페이지를 방문 1회로 집계합니다. 내부 이동과 수집 시작 전 기록은 제외합니다. 브라우저가 참조 정보를 보내지 않으면 직접 유입으로 표시됩니다.</p>
+    </section>
+    <div class="table-responsive mt-3">
+        <table class="table align-middle">
+            <thead><tr><th>유입 경로</th><th>방문 수</th></tr></thead>
+            <tbody>{% for item in sources %}<tr><td>{{ item.label }}</td><td>{{ item.visits }}</td></tr>{% endfor %}</tbody>
+        </table>
+    </div>
+
     <section class="page-head mt-5"><h2 class="section-title">인기 페이지 · 최근 30일</h2></section>
     <div class="table-responsive mt-3">
         <table class="table align-middle">
