@@ -20,11 +20,11 @@
         </div>
         <div class="col-auto"><button class="btn btn-primary btn-lg">검색</button></div>
     </form>
-    <div class="explore-ranking-list">
+    <ul class="explore-ranking-list poem-feed" role="list" aria-labelledby="find-poems-title">
         {% for rank in [1,2,3,4,5] %}
         {% set poem=poems[rank - 1] %}
-        <div class="explore-ranking-item{% if not poem %} is-empty{% endif %}">
-            <article class="card poem-card h-100">
+        <li class="explore-ranking-item{% if not poem %} is-empty{% endif %}">
+            {% if poem %}<article class="card poem-card h-100">{% else %}<div class="card poem-card h-100">{% endif %}
                 <div class="card-body">
                     <div class="community-content">
                         {% if poem %}
@@ -46,10 +46,10 @@
                         {% endif %}
                     </div>
                 </div>
-            </article>
-        </div>
+            {% if poem %}</article>{% else %}</div>{% endif %}
+        </li>
         {% endfor %}
-    </div>
+    </ul>
     <nav class="poem-pagination" aria-label="작품 목록 페이지">
         {% if currentPage > 1 %}
         <a class="pagination-arrow" href="/poems?keyword={{ keyword | urlencode }}&page={{ currentPage - 1 }}" aria-label="이전 페이지">&lt;</a>

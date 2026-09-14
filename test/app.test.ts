@@ -208,6 +208,34 @@ async function googleLogin(
   return csrf;
 }
 
+test('public poem feeds contain linked articles and keep advertising slots outside the list', async t => {
+  const db = createDatabase(':memory:');
+  const app = await buildApp({ db, sessionSecret: testSessionSecret });
+  t.after(() => app.close());
+
+  async function checkFeed(url: string, articleCount: number, slotCount: number) {
+    const response = await app.inject({ url });
+    assert.equal(response.statusCode, 200);
+    const feed = response.body.match(/<(?:ol|ul) class="[^"]*poem-feed"[^>]*>([\s\S]*?)<\/(?:ol|ul)>/)?.[1];
+    assert.ok(feed);
+    assert.equal(feed.match(/<article\b/g)?.length ?? 0, articleCount);
+    assert.equal(feed.match(/class="poem-title-link" href="\/poems\/\d+"/g)?.length ?? 0, articleCount);
+    assert.equal(feed.match(/<li\b/g)?.length, 5);
+    assert.doesNotMatch(feed, /<aside\b|data-ad-slot/);
+    assert.equal(response.body.match(/data-ad-slot=/g)?.length, slotCount);
+  }
+
+  await checkFeed('/', 0, 6);
+  await checkFeed('/poems', 0, 3);
+  for (let index = 0; index < 6; index += 1) {
+    createPoem(db, '사과', ['사과 한 입', '과일 한 조각'], null);
+  }
+  await checkFeed('/', 5, 6);
+  await checkFeed('/poems', 5, 3);
+  await checkFeed('/poems?page=2', 1, 3);
+  await checkFeed('/poems?keyword=없는단어', 0, 3);
+});
+
 test('public pages, poem validation and anonymous creation', async t => {
   const app = await testApp(); t.after(() => app.close());
   const c = await client(app);

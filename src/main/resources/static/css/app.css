@@ -821,6 +821,20 @@ header .navbar {
     background: var(--accent)
 }
 
+.poem-feed {
+    margin: 0;
+    padding: 0;
+    list-style: none
+}
+
+.trending-feed {
+    display: grid;
+    grid-column: 1;
+    grid-row: 1 / span 5;
+    grid-template-rows: repeat(5, 254px);
+    min-width: 0
+}
+
 .trending-grid {
     display: grid;
     grid-template-columns: minmax(0, 2fr) minmax(240px, .8fr);
@@ -2568,6 +2582,9 @@ label {
 }
 
 @media (max-width: 900px) {
+    .trending-feed {
+        grid-template-rows: repeat(5, minmax(190px, auto))
+    }
     .detail-layout {
         grid-template-columns: 1fr;
         padding-top: 36px !important
