@@ -227,9 +227,7 @@ test('public pages, poem validation and anonymous creation', async t => {
   assert.match(emptyHome.body, /href="\/privacy">개인정보처리방침<\/a>/);
   assert.equal(emptyHome.body.match(/class="community-rank"/g)?.length ?? 0, 0);
   assert.equal(emptyHome.body.match(/class="trending-item trending-rank-\d is-empty" aria-hidden="true"/g)?.length, 5);
-  assert.equal(emptyHome.body.match(/class="home-sponsor-sidebar"/g)?.length, 3);
-  assert.equal(emptyHome.body.match(/class="home-sponsor-feed home-sponsor-feed-rank-/g)?.length, 3);
-  assert.doesNotMatch(emptyHome.body, /home-sponsor-between|home-mobile-between/);
+  assert.doesNotMatch(emptyHome.body, /data-ad-slot|ADVERTISEMENT|home-sponsor/);
   assert.equal(emptyHome.body.match(/class="recent-words"/g)?.length, 1);
   assert.match(emptyHome.body, /방금 올라온 단어/);
   assert.doesNotMatch(emptyHome.body, /class="home-house-banner"|광고 자리 비어있습니다/);
@@ -265,8 +263,11 @@ test('public pages, poem validation and anonymous creation', async t => {
   assert.match(advertisingPage.body, /Instagram DM/);
   const writePage = await c.request({ method: 'GET', url: '/poems/new' });
   assert.match(writePage.body, /maxlength="5"/);
-  assert.match(writePage.body, /작성한 N행시는 N행시 공식 인스타그램 등 SNS에 소개될 수 있어요\./);
-  assert.match(initialExplorePage.body, /작성한 N행시는 N행시 공식 인스타그램 등 SNS에 소개될 수 있어요\./);
+  for (const page of [initialExplorePage, writePage]) {
+    assert.doesNotMatch(page.body, /data-ad-slot|ADVERTISEMENT|combined-write-ads/);
+  }
+  assert.match(writePage.body, /작성한 N행시는 N행시 공식 SNS에 소개될 수 있어요\./);
+  assert.match(initialExplorePage.body, /작성한 N행시는 N행시 공식 SNS에 소개될 수 있어요\./);
   let response = await c.request({ method: 'POST', url: '/poems', headers, payload: form({ _csrf: c.csrf, word: '가나다라마바' }) });
   assert.equal(response.statusCode, 200);
   assert.match(response.body, /제시어는 2~5자여야 합니다/);
@@ -279,6 +280,7 @@ test('public pages, poem validation and anonymous creation', async t => {
   response = await c.request({ method: 'GET', url: location });
   assert.equal(response.statusCode, 200);
   assert.match(response.body, /익명/);
+  assert.doesNotMatch(response.body, /data-ad-slot|ADVERTISEMENT|detail-comment-ad/);
   assert.match(response.body, /action="[^\"]+\/ratings"/);
   assert.match(response.body, /action="[^\"]+\/comments"/);
   assert.match(response.body, /<title>고양이 N행시 - 익명의 작품 \| N행시<\/title>/);
@@ -383,7 +385,7 @@ test('Google login, nickname, comment, rating, save and unsave flow', async t =>
   assert.match(response.body, /class="report-icon-button" aria-label="작품 신고"/);
   assert.match(response.body, /신고 사유를 구체적으로 적어주세요/);
   assert.match(response.body, /placeholder="의견을 남겨주세요"/);
-  assert.match(response.body, /class="detail-comment-ad"/);
+  assert.doesNotMatch(response.body, /data-ad-slot|ADVERTISEMENT|detail-comment-ad/);
   const commentId = response.body.match(new RegExp(`${poemUrl}/comments/(\\d+)`))?.[1];
   assert.ok(commentId);
   response = await c.request({
