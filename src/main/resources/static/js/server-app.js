@@ -1,5 +1,48 @@
 "use strict";
 
+// Updating a poem must not add another copy of its page to browser history.
+let poemInteractionPending = false;
+document.addEventListener("submit", async event => {
+    const form = event.target;
+    if (!form.matches(".detail-page main form")) return;
+    event.preventDefault();
+    if (poemInteractionPending) return;
+    poemInteractionPending = true;
+    const button = event.submitter;
+    if (button) button.disabled = true;
+    try {
+        const response = await fetch(form.action, {
+            method: "POST",
+            body: new URLSearchParams(new FormData(form)),
+            headers: { "X-Poem-Interaction": "1" },
+        });
+        const url = new URL(response.url);
+        if (url.origin !== location.origin || url.pathname !== location.pathname) {
+            location.replace(response.url);
+            return;
+        }
+        if (!response.ok) throw new Error("작업을 완료하지 못했습니다.");
+        const page = new DOMParser().parseFromString(await response.text(), "text/html");
+        const main = page.querySelector("main");
+        if (!main) throw new Error("화면을 갱신하지 못했습니다.");
+        document.querySelector("main").replaceWith(main);
+        history.replaceState(history.state, "", url.href);
+    } catch {
+        let error = form.querySelector("[data-interaction-error]");
+        if (!error) {
+            error = document.createElement("p");
+            error.dataset.interactionError = "";
+            error.className = "text-danger small mt-2";
+            error.setAttribute("role", "alert");
+            form.append(error);
+        }
+        error.textContent = "처리 결과를 확인하지 못했습니다. 새로고침으로 결과를 확인해 주세요.";
+    } finally {
+        poemInteractionPending = false;
+        if (button) button.disabled = false;
+    }
+});
+
 document.addEventListener("DOMContentLoaded", () => {
     const wordInput = document.querySelector("[data-poem-word]");
     const preview = document.querySelector("[data-poem-preview]");

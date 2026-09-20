@@ -16,6 +16,7 @@ declare module 'fastify' {
   }
 
   interface FastifyRequest {
+    pageViewVisitorId: string | null;
     currentUser: User | null;
     effectiveMethod: string;
     isAdmin: boolean;

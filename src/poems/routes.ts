@@ -17,6 +17,7 @@ import { bodyOf, numericId, queryOf } from '../shared/request.js';
 import { dailyWord } from './daily-word.js';
 import { validatePoem } from './validation.js';
 import { matchesKeyword, toCommentView, toPoemView } from './view.js';
+import { isPageNavigation } from '../pageviews/pageviews.js';
 
 const validLineFilters = new Set(['2', '3', '4', '5']);
 
@@ -82,6 +83,9 @@ export function registerPoemRoutes(app: FastifyInstance, db: DatabaseSync): void
     const poemData = getPoem(db, numericId(request), request.currentUser?.id);
     if (!poemData) return reply.view('error/404.njk', {}, 404);
     const poem = toPoemView(poemData);
+
+    // This response's view is persisted after it is sent.
+    if (isPageNavigation(request)) poem.viewCount += 1;
 
     return reply.view('poems/detail.njk', {
       poem,

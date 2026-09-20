@@ -40,17 +40,22 @@ function testApp(adminEmail?: string) {
 }
 
 async function client(app: FastifyInstance) {
-  let cookie = '';
+  const cookies = new Map<string, string>();
+  const cookie = () => [...cookies].map(([name, value]) => `${name}=${value}`).join('; ');
   async function request(options: InjectOptions) {
-    const response = await app.inject({ ...options, headers: { ...options.headers, ...(cookie ? { cookie } : {}) } });
+    const response = await app.inject({ ...options, headers: { ...options.headers, ...(cookies.size ? { cookie: cookie() } : {}) } });
     const setCookie = response.headers['set-cookie'];
-    if (setCookie) cookie = (Array.isArray(setCookie) ? setCookie.at(-1) : setCookie)?.split(';')[0] ?? '';
+    for (const entry of setCookie ? (Array.isArray(setCookie) ? setCookie : [setCookie]) : []) {
+      const pair = entry.split(';')[0]!;
+      const separator = pair.indexOf('=');
+      cookies.set(pair.slice(0, separator), pair.slice(separator + 1));
+    }
     return response;
   }
   const page = await request({ method: 'GET', url: '/poems/new' });
   const csrf = page.body.match(/name="_csrf" value="([^"]+)"/)?.[1];
   assert.ok(csrf);
-  return { request, csrf, cookie: () => cookie };
+  return { request, csrf, cookie };
 }
 
 function form(payload: Record<string, string | undefined>): string {
@@ -793,6 +798,67 @@ test('successful HTML page views are stored by date and visible to admins', asyn
   assert.match(dashboard.body, /최근 30일/);
   assert.match(dashboard.body, /<strong class="fs-2">3<\/strong>/);
   assert.equal((db.prepare('SELECT count(*) AS count FROM page_views').get() as { count: number }).count, 3);
+});
+
+test('poem creation counts once and background interactions do not add views or visitors', async t => {
+  const db = createDatabase(':memory:');
+  const app = await buildApp({ db, sessionSecret: testSessionSecret });
+  t.after(() => app.close());
+  const c = await client(app);
+  db.exec('DELETE FROM page_views');
+  const created = await c.request({ method: 'POST', url: '/poems', headers,
+    payload: form({ _csrf: c.csrf, word: '하늘', 'lines[0]': '하루', 'lines[1]': '늘 함께' }) });
+  const url = created.headers.location!;
+  const detail = await c.request({ url, headers: { 'sec-fetch-dest': 'document' } });
+  assert.match(detail.body, /조회 1<\/span>/);
+  for (const [action, values] of [
+    ['comments', { content: '좋은 작품' }],
+    ['ratings', { score: '5' }],
+    ['reports', { reason: '신고 사유입니다' }],
+  ] as const) {
+    const result = await c.request({ method: 'POST', url: `${url}/${action}`,
+      headers: { ...headers, 'x-poem-interaction': '1' },
+      payload: form({ _csrf: c.csrf, ...values }) });
+    assert.equal(result.statusCode, 302);
+    const refreshed = await c.request({ url: result.headers.location!,
+      headers: { 'x-poem-interaction': '1' } });
+    assert.match(refreshed.body, /조회 1<\/span>/);
+  }
+  for (const extraHeaders of [
+    { 'sec-fetch-dest': 'empty' }, { 'sec-fetch-dest': 'iframe' },
+    { purpose: 'prefetch' }, { 'sec-purpose': 'prefetch;prerender' },
+  ]) {
+    await c.request({ url, headers: extraHeaders });
+  }
+  assert.equal(listTrendingPoems(db)[0]!.viewCount, 1);
+  const counts = db.prepare('SELECT count(*) AS pv, count(DISTINCT visitor_id) AS uv FROM page_views').get();
+  assert.equal(counts!.pv, 1);
+  assert.equal(counts!.uv, 1);
+  // A real subsequent navigation remains a page view, not another visitor.
+  const revisited = await c.request({ url, headers: { 'sec-fetch-dest': 'document' } });
+  assert.match(revisited.body, /조회 2<\/span>/);
+  assert.equal(listTrendingPoems(db)[0]!.viewCount, 2);
+  assert.equal(db.prepare('SELECT count(DISTINCT visitor_id) AS n FROM page_views').get()!.n, 1);
+});
+
+test('visitor identity survives signup, logout and login while another browser is distinct', async t => {
+  const db = createDatabase(':memory:');
+  const app = await buildApp({ db, sessionSecret: testSessionSecret });
+  t.after(() => app.close());
+  const c = await client(app);
+  const originalVisitor = db.prepare('SELECT visitor_id FROM page_views LIMIT 1').get()!.visitor_id;
+  const csrf = await googleLogin(c, 'visitor@example.com', '방문자');
+  await c.request({ method: 'POST', url: '/logout', headers, payload: form({ _csrf: csrf }) });
+  await c.request({ url: '/' });
+  const auth = await c.request({ url: '/oauth2/authorization/google' });
+  const state = new URL(auth.headers.location!).searchParams.get('state')!;
+  await c.request({ url: `/login/oauth2/code/google?code=test-code&state=${state}` });
+  await c.request({ url: '/' });
+  const visitors = db.prepare('SELECT DISTINCT visitor_id FROM page_views').all();
+  assert.equal(visitors.length, 1);
+  assert.equal(visitors[0]!.visitor_id, originalVisitor);
+  await client(app);
+  assert.equal(db.prepare('SELECT count(DISTINCT visitor_id) AS n FROM page_views').get()!.n, 2);
 });
 
 test('members can report comments once and admins can review and delete them', async t => {

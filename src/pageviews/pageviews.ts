@@ -1,5 +1,6 @@
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import type { DatabaseSync } from 'node:sqlite';
+import { randomUUID } from 'node:crypto';
 
 type SummaryRow = {
   views: number;
@@ -15,16 +16,33 @@ type PageRow = SummaryRow & {
 };
 
 export function registerPageViews(app: FastifyInstance, db: DatabaseSync, appBaseUrl: string): void {
+  app.decorateRequest('pageViewVisitorId', null);
   const insertPageView = db.prepare(`
     INSERT INTO page_views(path, visitor_id, user_id, referrer_source, view_date)
     VALUES (?, ?, ?, ?, date('now', '+9 hours'))
   `);
 
+  app.addHook('onSend', async (request, reply, payload) => {
+    if (!isPageView(request, reply)) return payload;
+    const cookie = request.cookies.nhangsi_visitor;
+    const visitorId = cookie && /^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/.test(cookie)
+      ? cookie : randomUUID();
+    request.pageViewVisitorId = visitorId;
+    if (visitorId !== cookie) {
+      // Independent of authentication sessions, which rotate on login/logout.
+      reply.setCookie('nhangsi_visitor', visitorId, {
+        path: '/', httpOnly: true, sameSite: 'lax',
+        secure: new URL(appBaseUrl).protocol === 'https:',
+      });
+    }
+    return payload;
+  });
+
   app.addHook('onResponse', async (request, reply) => {
     if (!isPageView(request, reply)) return;
 
     const path = new URL(request.url, 'http://localhost').pathname;
-    insertPageView.run(path, request.session.sessionId, request.currentUser?.id ?? null,
+    insertPageView.run(path, request.pageViewVisitorId!, request.currentUser?.id ?? null,
       classifyReferrer(request.headers.referer, appBaseUrl));
   });
 
@@ -101,11 +119,23 @@ export function classifyReferrer(referrer: string | undefined, appBaseUrl: strin
 }
 
 function isPageView(request: FastifyRequest, reply: FastifyReply): boolean {
-  if (request.method !== 'GET' || reply.statusCode < 200 || reply.statusCode >= 300) return false;
+  if (!isPageNavigation(request) || reply.statusCode < 200 || reply.statusCode >= 300) return false;
   if (!String(reply.getHeader('content-type') ?? '').startsWith('text/html')) return false;
 
   const path = new URL(request.url, 'http://localhost').pathname;
   return !path.startsWith('/admin') && !path.includes('.');
+}
+
+export function isPageNavigation(request: FastifyRequest): boolean {
+  if (request.method !== 'GET') return false;
+  // Background form refreshes and speculative loads are not page visits.
+  if (request.headers['x-poem-interaction'] === '1') return false;
+  const destination = request.headers['sec-fetch-dest'];
+  if (destination !== undefined && destination !== 'document') return false;
+  const purpose = `${request.headers.purpose ?? ''} ${request.headers['sec-purpose'] ?? ''}`;
+  if (/prefetch|prerender/i.test(purpose)) return false;
+
+  return true;
 }
 
 function summary(db: DatabaseSync, where: string): SummaryRow {
